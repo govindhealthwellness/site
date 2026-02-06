@@ -19,7 +19,10 @@
             "destination": "/server/index.js"
         },
         {
-            "source": "/((?!assets/|favicon.ico|luvbees.png|heart-flame.png).*)",
+            "handle": "filesystem"
+        },
+        {
+            "source": "/(.*)",
             "destination": "/index.html"
         }
     ]
