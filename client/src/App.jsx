@@ -1,0 +1,858 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Heart, ShoppingBag, Plus, Trash2, ChevronRight, ChevronLeft,
+  CheckCircle, Settings, Image as ImageIcon, Package, Play,
+  HelpCircle, Zap, Video, Instagram, ShieldCheck, Award, Truck,
+  MapPin, Sparkles, AlignLeft, Phone, Coffee, Gift, ArrowLeft,
+  ClipboardList, Upload, Volume2, VolumeX
+} from 'lucide-react';
+import axios from 'axios';
+
+// --- Theme & Style Constants ---
+const THEME = {
+  primaryRed: '#DA3A36',
+  yellow: '#F6D55F',
+  cream: '#F4E6C5',
+  darkText: '#4A0404',
+  blush: '#FED3C7'
+};
+
+const INITIAL_PRODUCTS = [
+  { id: 'p1', name: 'LUVBEES Classic', price: 499.00, regularPrice: 799, description: "India's viral chocolate sensation. Feed the flame, naturally.", imageUrl: 'https://images.unsplash.com/photo-1516589174184-c68526674fd6', active: true, category: 'Chocolates' },
+  { id: 'p2', name: 'Combo Pack of 2', price: 799.00, regularPrice: 1598, description: "Double the delight. Save ₹450 with this pack of two handcrafted bars.", imageUrl: 'https://images.unsplash.com/photo-1522673607200-16484837dec5', active: true, category: 'Chocolates' },
+  { id: 'p3', name: 'Edible Chocobody Paint', price: 599.00, regularPrice: 899, description: "Rich, smooth dark chocolate paint with a soft brush for artistic intimacy.", imageUrl: 'https://images.unsplash.com/photo-1511381939415-e44015466834', active: true, category: 'Chocolates' },
+  { id: 'p4', name: 'Adam & Eve Candle', price: 1199.00, regularPrice: 2397, description: "Scented with sandalwood and rose petals. Designed for intimate evenings.", imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59', active: true, category: 'Gifts' },
+  { id: 'p5', name: 'Couple Flaming Card', price: 299.00, regularPrice: 499, description: "Heat-reactive cards that reveal daring dares and romantic prompts.", imageUrl: 'https://images.unsplash.com/photo-1534531173927-aeb928d54385', active: true, category: 'Gifts' },
+  { id: 'p6', name: 'Massage Oil Set', price: 899.00, regularPrice: 1499, description: "A trio of essential oils: Lavender, Ylang Ylang, and Jasmine for deep relaxation.", imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef', active: true, category: 'Gifts' }
+];
+
+// Helper to load scripts (for Razorpay)
+const loadScript = (src) => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
+// --- Sub-Components ---
+const HeartCursor = () => {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    const move = (e) => setPos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', move);
+    window.addEventListener('resize', check);
+    return () => { window.removeEventListener('mousemove', move); window.removeEventListener('resize', check); };
+  }, []);
+  if (isMobile) return null;
+  return <div className="fixed pointer-events-none z-[9999] transition-transform duration-75" style={{ left: pos.x, top: pos.y, transform: 'translate(-50%, -50%)' }}><img src="/heart-flame.png" className="w-12 h-12 object-contain drop-shadow-lg" alt="" /></div>;
+};
+
+const CustomSlider = ({ items, type = 'image' }) => {
+  const [idx, setIdx] = useState(0);
+  const [muted, setMuted] = useState(true);
+  const next = () => setIdx((prev) => (prev + 1) % (items?.length || 1));
+  const prev = () => setIdx((prev) => (prev - 1 + (items?.length || 1)) % (items?.length || 1));
+
+  if (!items || items.length === 0) return <div className="w-full aspect-video bg-white/10 rounded-2xl flex items-center justify-center italic opacity-30 border border-dashed border-[#DA3A36]">No {type}s configured in Admin</div>;
+
+  return (
+    <div className="relative w-full aspect-video md:aspect-[21/9] overflow-hidden rounded-2xl border border-[#DA3A36]/20 group shadow-lg bg-black">
+      <div className="absolute inset-0 flex transition-transform duration-500" style={{ transform: `translateX(-${idx * 100}%)` }}>
+        {items.map((it, i) => {
+          const instaMatch = it.includes('instagram.com') ? it.match(/(?:p|reel|reels)\/([a-zA-Z0-9_-]+)/) : null;
+          return (
+            <div key={i} className="w-full flex-shrink-0 relative h-full flex items-center justify-center bg-black">
+              {type === 'image' ? <img src={it} className="w-full h-full object-cover" alt="" /> :
+                (instaMatch ?
+                  <iframe
+                    src={`https://www.instagram.com/p/${instaMatch[1]}/embed/captioned/`}
+                    className="w-full h-full md:max-w-[540px] bg-white mx-auto"
+                    frameBorder="0"
+                    scrolling="no"
+                    allowtransparency="true"
+                    allowFullScreen
+                  ></iframe>
+                  : (it.includes('instagram.com') ?
+                    <div className="w-full h-full bg-black flex items-center justify-center relative overflow-hidden">
+                      <div className="text-center space-y-4">
+                        {/* Using Instagram icon if available, otherwise reuse Play or similar */}
+                        <Play size={48} className="text-[#DA3A36] mx-auto animate-pulse" />
+                        <div className="text-white/50 text-xs uppercase tracking-widest">Instagram Content</div>
+                        <button onClick={() => window.open(it, '_blank')} className="bg-[#DA3A36] text-white px-6 py-2 rounded-full text-xs font-bold uppercase hover:scale-105 transition">View on Instagram</button>
+                      </div>
+                    </div>
+                    :
+                    <div className="relative w-full h-full">
+                      <video src={it} className="w-full h-full object-contain" autoPlay loop muted={muted} playsInline />
+                      <button onClick={() => setMuted(!muted)} className="absolute bottom-6 right-6 p-3 bg-black/50 text-white rounded-full hover:bg-[#DA3A36] transition backdrop-blur-sm">
+                        {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                      </button>
+                    </div>
+                  )
+                )
+              }
+            </div>
+          );
+        })}
+      </div>
+      {items.length > 1 && (
+        <>
+          <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-[#DA3A36] hover:text-white z-10"><ChevronLeft size={24} /></button>
+          <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-[#DA3A36] hover:text-white z-10"><ChevronRight size={24} /></button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {items.map((_, i) => (
+              <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-[#DA3A36] w-6' : 'bg-[#DA3A36]/20'}`} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const AccordionItem = ({ q, a }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-[#DA3A36]/10">
+      <button onClick={() => setOpen(!open)} className="w-full py-6 flex justify-between items-center text-left hover:text-[#DA3A36]">
+        <span className="font-serif text-lg">{q}</span><Plus size={20} className={`transition ${open ? 'rotate-45' : ''}`} />
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-96 mb-6' : 'max-h-0'}`}><p className="opacity-70 text-sm leading-relaxed">{a}</p></div>
+    </div>
+  );
+};
+
+// --- Main Application ---
+export default function App() {
+  const [view, setView] = useState('home');
+  const [products, setProducts] = useState(INITIAL_PRODUCTS); // Fallback to initial
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  // Dynamic Configs
+  const [flashnews, setFlashnews] = useState({ text: "Flashnews • India's viral chocolate • Free Shipping • Limited Stock", speed: 15 });
+  const [media, setMedia] = useState({
+    heroImages: [
+      'https://images.unsplash.com/photo-1516589174184-c68526674fd6',
+      'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3',
+      'https://images.unsplash.com/photo-1518895312237-a9e23508027d'
+    ],
+    momentImages: [],
+    galleryVideos: [],
+    socialPosts: []
+  });
+  const [faqs, setFaqs] = useState([]);
+  const [delivery, setDelivery] = useState({ fee: 50, threshold: 500 });
+
+  // Refresh Data Trigger
+  const [refresh, setRefresh] = useState(0);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setLoading(true);
+        // Load Products
+        const pRes = await axios.get('/api/products');
+        if (pRes.data && pRes.data.length > 0) setProducts(pRes.data);
+
+        // Load Configs
+        const fRes = await axios.get('/api/configs/flashnews').catch(() => null);
+        if (fRes?.data) setFlashnews(fRes.data);
+
+        const mRes = await axios.get('/api/configs/media').catch(() => null);
+        if (mRes?.data) setMedia(mRes.data);
+
+        const qRes = await axios.get('/api/configs/faqs').catch(() => null);
+        if (qRes?.data?.items) setFaqs(qRes.data.items);
+
+        const dRes = await axios.get('/api/configs/delivery').catch(() => null);
+        if (dRes?.data) setDelivery(dRes.data);
+
+      } catch (err) { console.error("Data Load Error", err); }
+      finally { setLoading(false); }
+    };
+    init();
+  }, [refresh]);
+
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const isFree = subtotal >= (delivery.threshold || 0);
+  const shipCost = subtotal > 0 ? (isFree ? 0 : (delivery.fee || 0)) : 0;
+  const grandTotal = subtotal + shipCost;
+
+  const addToCart = (p) => {
+    setCart(prev => {
+      const ex = prev.find(i => i.id === p.id);
+      if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { ...p, qty: 1 }];
+    });
+  };
+
+  const clearCart = () => setCart([]);
+
+  const reloadData = () => setRefresh(prev => prev + 1);
+
+  if (loading) return <div className="h-screen w-full bg-[#F4E6C5] flex items-center justify-center"><Heart className="animate-pulse text-[#DA3A36]" size={48} /></div>;
+
+  return (
+    <div className="min-h-screen bg-[#F4E6C5] text-[#4A0404] font-sans selection:bg-[#E97D78] selection:text-white">
+      <style>{`
+        @keyframes mq {0%{transform:translateX(100%);}100%{transform:translateX(-100%);}} 
+        .marquee-box {display:inline-block;white-space:nowrap;padding-left:100%;animation:mq linear infinite;}
+        .text-shadow { text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+      `}</style>
+      <HeartCursor />
+
+      {/* Marquee Flashnews */}
+      <div className="bg-[#DA3A36] text-[#F6D55F] py-2 text-xs font-bold uppercase tracking-widest overflow-hidden shadow-md sticky top-0 z-[60]">
+        <div className="marquee-box" style={{ animationDuration: `${flashnews.speed}s` }}>
+          <span className="px-8">{flashnews.text}</span>
+          <span className="px-8">{flashnews.text}</span>
+          <span className="px-8">{flashnews.text}</span>
+          <span className="px-8">{flashnews.text}</span>
+          <span className="px-8">{flashnews.text}</span>
+        </div>
+      </div>
+
+      <nav className="sticky top-[32px] z-50 bg-[#F4E6C5]/90 backdrop-blur-md border-b border-[#DA3A36]/10 px-6 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setView('home')}>
+          <img src="/luvbees.png" className="w-10 h-10 object-contain drop-shadow-md group-hover:scale-110 transition" alt="LuvBees" />
+          <span className="text-2xl font-serif tracking-widest uppercase text-[#DA3A36]">LuvBees</span>
+        </div>
+
+        <div className="hidden md:flex gap-8 text-[10px] uppercase font-bold tracking-widest opacity-60">
+          <button onClick={() => setView('chocolate-shop')} className={`hover:text-[#DA3A36] ${view === 'chocolate-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Chocolates</button>
+          <button onClick={() => setView('gift-shop')} className={`hover:text-[#DA3A36] ${view === 'gift-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Gifts & Extras</button>
+        </div>
+
+        <div className="flex gap-4 items-center">
+          <button onClick={() => setView('cart')} className="relative p-2 text-[#DA3A36] hover:bg-white/40 rounded-full transition">
+            <ShoppingBag />
+            {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-[#F6D55F] text-black text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center animate-bounce shadow-md">{cart.reduce((a, b) => a + b.qty, 0)}</span>}
+          </button>
+          <button onClick={() => setView('admin')} className="text-[10px] uppercase opacity-40 hover:opacity-100 font-bold tracking-widest transition border-l border-black/10 pl-4">Admin</button>
+        </div>
+      </nav>
+
+      <main>
+        {view === 'home' && <HomeView products={products} setView={setView} addToCart={addToCart} media={media} faqs={faqs} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} />}
+        {view === 'chocolate-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Chocolates" />}
+        {view === 'gift-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Gifts" />}
+        {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} />}
+        {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} freeThreshold={delivery.threshold} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} />}
+        {view === 'admin' && <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} />}
+        {view === 'success' && <SuccessView setView={setView} />}
+      </main>
+
+      <footer className="bg-[#FED3C7] border-t border-[#DA3A36]/10 py-16 px-6 text-center">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="flex justify-center gap-2 items-center text-[#DA3A36]">
+            <Heart size={20} fill="currentColor" />
+            <h2 className="text-3xl font-serif uppercase tracking-widest">LuvBees</h2>
+            <Heart size={20} fill="currentColor" />
+          </div>
+          <p className="text-xs opacity-60 tracking-widest">care.luvbees@gmail.com • Feed the Flame, Naturally</p>
+          <div className="pt-12 border-t border-black/5 text-[10px] opacity-30 uppercase tracking-widest">&copy; 2025 LuvBees • Developed by DarkPixel</div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
+  const [hIdx, setHIdx] = useState(0);
+  useEffect(() => {
+    if (!media.heroImages?.length || media.heroImages.length <= 1) return;
+    const t = setInterval(() => setHIdx(p => (p + 1) % media.heroImages.length), 5000);
+    return () => clearInterval(t);
+  }, [media.heroImages]);
+
+  return (
+    <div className="space-y-24 pb-24 animate-in fade-in duration-700">
+      <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 opacity-5 pointer-events-none z-10">
+          <svg width="100%" height="100%"><pattern id="hp" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M50 80 C20 60 0 40 0 20 C0 10 10 0 20 0 C30 0 40 10 50 20 C60 10 70 0 80 0 C90 0 100 10 100 20 C100 40 80 60 50 80 Z" fill={THEME.primaryRed} transform="scale(0.3) translate(50, 50)" /></pattern><rect width="100%" height="100%" fill="url(#hp)" /></svg>
+        </div>
+        {(media.heroImages || []).map((img, i) => (
+          <div key={i} className={`absolute inset-0 transition-opacity duration-2000 ${i === hIdx ? 'opacity-50' : 'opacity-0'}`}>
+            <img src={img} className="w-full h-full object-cover scale-110" alt="" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#F4E6C5]/40 via-transparent to-[#F4E6C5]" />
+          </div>
+        ))}
+        <div className="relative z-20 text-center px-6 max-w-4xl space-y-8 animate-in slide-in-from-bottom-10 duration-1000">
+          <div className="flex justify-center"><img src="/heart-flame.png" className="w-32 h-32 object-contain animate-pulse drop-shadow-xl" alt="" /></div>
+          <h1 className="text-6xl md:text-9xl font-serif italic text-[#DA3A36] leading-tight text-shadow">Feed the Flame, Naturally</h1>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolate Sanctuary</button>
+            <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gift Boutique</button>
+          </div>
+        </div>
+      </section>
+      <section className="px-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="w-12 h-px bg-[#DA3A36]/30"></div>
+          <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#DA3A36]">Moment Movements</h3>
+          <div className="flex-1 h-px bg-[#DA3A36]/20"></div>
+        </div>
+        <CustomSlider items={media.momentImages} />
+      </section>
+      <section className="px-6 max-w-7xl mx-auto space-y-16">
+        <div className="text-center space-y-2">
+          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Chocolate Sanctuary</h2>
+          <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Our Viral Vitality Chocolates</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-10">
+          {products.filter(p => p.active && p.category === 'Chocolates').slice(0, 3).map(p => (
+            <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+              <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
+                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+              </div>
+              <h3 className="text-2xl font-serif text-[#4A0404] cursor-pointer" onClick={() => setProduct(p)}>{p.name}</h3>
+              <p className="text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
+              <div className="flex items-end gap-3 mb-8">
+                <div className="text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
+                {p.regularPrice > p.price && <div className="text-sm line-through opacity-20 font-normal mb-1">₹{p.regularPrice}</div>}
+              </div>
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20">
+                <ShoppingBag size={18} /> Buy Now
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="text-center pt-8"><button onClick={() => setView('chocolate-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore All Chocolates</button></div>
+      </section>
+
+      <section className="px-6 max-w-7xl mx-auto space-y-16">
+        <div className="text-center space-y-2">
+          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Gift Boutique</h2>
+          <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-10">
+          {products.filter(p => p.active && p.category === 'Gifts').slice(0, 3).map(p => (
+            <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+              <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
+                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+              </div>
+              <h3 className="text-2xl font-serif text-[#4A0404] cursor-pointer" onClick={() => setProduct(p)}>{p.name}</h3>
+              <p className="text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
+              <div className="flex items-end gap-3 mb-8">
+                <div className="text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
+                {p.regularPrice > p.price && <div className="text-sm line-through opacity-20 font-normal mb-1">₹{p.regularPrice}</div>}
+              </div>
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20">
+                <ShoppingBag size={18} /> Buy Now
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="text-center pt-8"><button onClick={() => setView('gift-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore Gift Boutique</button></div>
+      </section>
+      <section className="px-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="w-12 h-px bg-[#DA3A36]/30"></div>
+          <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#DA3A36]">Storytelling Gallery</h3>
+          <div className="flex-1 h-px bg-[#DA3A36]/20"></div>
+        </div>
+        <CustomSlider items={media.galleryVideos} type="video" />
+      </section>
+      <section className="bg-[#FED3C7]/40 py-28 px-6 relative overflow-hidden">
+        <div className="absolute -top-20 -right-20 p-20 opacity-5 -rotate-12 pointer-events-none"><Sparkles size={400} className="text-[#DA3A36]" /></div>
+        <div className="max-w-5xl mx-auto text-center space-y-16">
+          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Explore The Ingredients</h2>
+          <div className="grid md:grid-cols-3 gap-10 relative z-10">
+            {[{ n: 'Dark Chocolate', d: 'Mood booster', i: '🍫' }, { n: 'Ashwagandha', d: 'Stress relief', i: '🌿' }, { n: 'Maca Root', d: 'Vitality boost', i: '💪' }].map(ing => (
+              <div key={ing.n} className="p-10 bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all border border-[#FED3C7] group text-center">
+                <div className="text-5xl mb-6">{ing.i}</div>
+                <h4 className="font-serif text-2xl text-[#DA3A36] italic">{ing.n}</h4>
+                <p className="text-xs opacity-60 uppercase font-bold tracking-tighter mt-4">{ing.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="px-6 max-w-4xl mx-auto py-12">
+        <h2 className="text-4xl font-serif italic text-[#4A0404] mb-12">Common Inquiries</h2>
+        <div className="space-y-1">{faqs.map((f, i) => <AccordionItem key={i} q={f.question} a={f.answer} />)}</div>
+      </section>
+      <section className="bg-[#DA3A36] text-[#F4E6C5] py-32 px-6 text-center relative overflow-hidden">
+        <div className="max-w-4xl mx-auto relative z-10 space-y-16">
+          <h2 className="text-6xl font-serif italic text-shadow">The Heart of LuvBees</h2>
+          <p className="text-xl md:text-2xl leading-relaxed italic opacity-90 max-w-3xl mx-auto">"LuvBees was born from a desire to transform simple connection into unforgettable experiences."</p>
+        </div>
+      </section>
+      <section className="px-6 max-w-6xl mx-auto py-24">
+        <h2 className="text-3xl font-serif text-center mb-20 italic text-[#4A0404]/80">We are Certified</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+          <BadgeItem icon={<ShieldCheck size={36} />} label="Secure SSL Payments" />
+          <BadgeItem icon={<Award size={36} />} label="Quality Assured" />
+          <BadgeItem icon={<MapPin size={36} />} label="Made In India" />
+          <BadgeItem icon={<Truck size={36} />} label="Fast Timely Delivery" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function BadgeItem({ icon, label }) {
+  return (
+    <div className="flex flex-col items-center gap-6 group">
+      <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center border-2 border-dashed border-[#DA3A36] group-hover:rotate-12 transition-transform shadow-sm">
+        <span className="text-[#DA3A36]">{icon}</span>
+      </div>
+      <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50 text-center">{label}</span>
+    </div>
+  );
+}
+
+function ShopView({ products, addToCart, setProduct, filter }) {
+  const filtered = products.filter(p => p.active && p.category === filter);
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-24 min-h-screen space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-500">
+      <div className="text-center space-y-4">
+        <h1 className="text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : 'Gift Boutique'}</h1>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        {filtered.map(p => (
+          <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col h-full hover:shadow-2xl transition-all group border border-[#FED3C7]/20">
+            <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
+              <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+            </div>
+            <h3 className="font-serif text-xl text-[#4A0404] cursor-pointer" onClick={() => setProduct(p)}>{p.name}</h3>
+            <p className="text-[10px] opacity-50 italic my-3 line-clamp-3 leading-relaxed">{p.description}</p>
+            <div className="mt-auto mb-6 flex items-center gap-2">
+              <span className="text-2xl font-bold text-[#DA3A36] italic">₹{p.price}</span>
+            </div>
+            <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 rounded-2xl font-bold uppercase text-[10px] shadow-lg active:scale-95 transition tracking-widest">Add to Cart</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProductDetailView({ product, addToCart, setView }) {
+  if (!product) return null;
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-20 min-h-[80vh] animate-in fade-in zoom-in duration-500">
+      <button onClick={() => setView(product.category === 'Chocolates' ? 'chocolate-shop' : 'gift-shop')} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 mb-12 transition"><ArrowLeft size={16} /> Back to Catalog</button>
+      <div className="grid md:grid-cols-2 gap-16 items-center">
+        <div className="rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
+          <img src={product.imageUrl} className="w-full h-full object-cover aspect-square" alt="" />
+        </div>
+        <div className="space-y-10">
+          <div className="space-y-4">
+            <span className="text-xs font-bold uppercase tracking-[0.4em] text-[#DA3A36] opacity-60">{product.category}</span>
+            <h1 className="text-5xl md:text-7xl font-serif italic leading-tight">{product.name}</h1>
+            <div className="flex items-center gap-4 pt-2">
+              <span className="text-4xl font-bold text-[#DA3A36] italic">₹{product.price}</span>
+            </div>
+          </div>
+          <div className="p-8 bg-white rounded-[2rem] border border-[#FED3C7] shadow-inner space-y-4">
+            <p className="italic opacity-80 leading-loose">{product.description}</p>
+          </div>
+          <button onClick={() => addToCart(product)} className="w-full bg-[#DA3A36] text-white py-6 rounded-[2rem] font-bold uppercase tracking-[0.2em] shadow-2xl hover:bg-[#E97D78] transition flex items-center justify-center gap-3 active:scale-95">
+            <ShoppingBag /> Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CartView({ cart, setView, subtotal, shipCost, grandTotal, freeThreshold, remove, clearCart }) {
+  const [formData, setFormData] = useState({ name: '', phone: '', address: '' });
+  const [isOrdering, setIsOrdering] = useState(false);
+
+  useEffect(() => {
+    loadScript('https://checkout.razorpay.com/v1/checkout.js');
+  }, []);
+
+  const handleCheckout = async () => {
+    if (!formData.name || !formData.phone || !formData.address) return;
+    setIsOrdering(true);
+    try {
+      const orderData = {
+        customer: formData,
+        items: cart,
+        subtotal,
+        shipCost,
+        total: grandTotal,
+        status: 'Pending'
+      };
+
+      // 1. Create Razorpay Order on Backend
+      const rzOrderRes = await axios.post('/api/create-razorpay-order', { amount: grandTotal });
+      const rzOrder = rzOrderRes.data;
+
+      const options = {
+        key: "rzp_test_SCpWIopZe4wkSQ", // Test Key Configured
+        amount: rzOrder.amount,
+        currency: rzOrder.currency,
+        name: "LuvBees",
+        description: "Feed the Flame",
+        order_id: rzOrder.id,
+        handler: async function (response) {
+          // 2. On Success, Save Order to DB
+          await axios.post('/api/orders', { ...orderData, paymentId: response.razorpay_payment_id });
+          clearCart();
+          setView('success');
+        },
+        prefill: {
+          name: formData.name,
+          contact: formData.phone
+        },
+        theme: { color: "#DA3A36" }
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      rzp1.on('payment.failed', function (response) {
+        alert("Payment Failed: " + response.error.description);
+        setIsOrdering(false);
+      });
+      rzp1.open();
+
+    } catch (err) {
+      console.error("Order processing error", err);
+      alert("Could not initiate payment. (Check backend/Razorpay keys)");
+      setIsOrdering(false);
+    }
+  };
+
+  if (cart.length === 0) return (
+    <div className="h-[70vh] flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-700">
+      <ShoppingBag size={80} className="opacity-10" />
+      <h2 className="font-serif text-3xl italic text-[#4A0404]/40 uppercase tracking-widest">Your selection is empty</h2>
+      <button onClick={() => setView('home')} className="bg-[#DA3A36] text-white px-16 py-4 rounded-full uppercase text-xs font-bold shadow-2xl hover:scale-110 transition border-2 border-[#F6D55F]">Return to Store</button>
+    </div>
+  );
+
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-24 min-h-screen grid lg:grid-cols-2 gap-20 animate-in fade-in slide-in-from-bottom-5 duration-700">
+      <div className="space-y-12">
+        <h1 className="text-4xl font-serif italic text-[#DA3A36]">Your Selection</h1>
+        <div className="space-y-6">
+          {cart.map(i => (
+            <div key={i.id} className="bg-white p-6 rounded-[2rem] flex items-center gap-6 shadow-sm border border-[#FED3C7]/30 relative">
+              <img src={i.imageUrl} className="w-24 h-24 object-cover rounded-2xl" alt="" />
+              <div className="flex-1">
+                <h4 className="font-serif text-xl">{i.name}</h4>
+                <p className="text-xs opacity-30 italic">Qty: {i.qty}</p>
+                <div className="font-bold text-[#DA3A36] text-lg">₹{i.price * i.qty}</div>
+              </div>
+              <button onClick={() => remove(i.id)} className="absolute -top-2 -right-2 bg-white text-red-400 p-3 rounded-full shadow-lg border border-[#FED3C7]"><Trash2 size={18} /></button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-10">
+        <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-[#DA3A36]/10 space-y-10 relative">
+          <h3 className="font-serif text-3xl italic text-[#DA3A36]">Guest Checkout</h3>
+          <div className="space-y-4">
+            <input placeholder="Full Name" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+            <input placeholder="Contact Phone" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+            <textarea placeholder="Shipping Address" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none min-h-[120px]" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+          </div>
+
+          <div className="space-y-4 pt-8 border-t border-[#DA3A36]/10">
+            <div className="flex justify-between text-xs font-bold uppercase opacity-40"><span>Subtotal</span><span>₹{subtotal}</span></div>
+            <div className="flex justify-between items-center text-xs font-bold uppercase">
+              <span className="opacity-40">Delivery {subtotal < freeThreshold && <span className="text-[8px] text-[#DA3A36] italic">(Add ₹{freeThreshold - subtotal} for free)</span>}</span>
+              <span className={shipCost === 0 ? "text-green-600 font-bold" : "opacity-40"}>{shipCost === 0 ? 'FREE' : `₹${shipCost}`}</span>
+            </div>
+            <div className="text-4xl font-serif text-[#DA3A36] pt-6 flex justify-between italic"><span>Total</span><span>₹{grandTotal}</span></div>
+          </div>
+
+          <button
+            onClick={handleCheckout}
+            disabled={!formData.name || !formData.phone || !formData.address || isOrdering}
+            className="w-full bg-[#DA3A36] text-white py-6 rounded-[2rem] font-bold uppercase shadow-2xl disabled:opacity-30 border-2 border-[#F6D55F] transition-all"
+          >
+            {isOrdering ? 'Processing...' : 'Complete via Razorpay'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) {
+  const [tab, setTab] = useState('inventory');
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: 'Chocolates', active: true });
+  const [orders, setOrders] = useState([]);
+
+  // Local states
+  const [nForm, setNForm] = useState(flashnews);
+  const [mForm, setMForm] = useState(media);
+  const [fForm, setFaqForm] = useState(faqs);
+  const [dForm, setDForm] = useState(delivery);
+
+  useEffect(() => {
+    // Load orders
+    axios.get('/api/orders').then(res => setOrders(res.data)).catch(console.error);
+    setNForm(flashnews); setMForm(media); setFaqForm(faqs); setDForm(delivery);
+  }, [flashnews, media, faqs, delivery, tab]);
+
+  const saveConfig = async (key, val) => {
+    try {
+      await axios.post(`/api/configs/${key}`, val);
+      alert("Config Updated!");
+      reloadData();
+    } catch (e) { alert("Error saving config"); }
+  };
+
+  const uploadFile = async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await axios.post('/api/upload', fd);
+    return res.data.url;
+  };
+
+  /* New State for Uploading Logic */
+  const [uploading, setUploading] = useState(null);
+
+  const addMediaUrl = async (k) => {
+    const u = prompt(`Enter URL:`);
+    if (u) setMForm({ ...mForm, [k]: [...(mForm[k] || []), u] });
+  };
+
+  const uploadMedia = (k) => {
+    const input = document.createElement('input'); input.type = 'file';
+    input.accept = k === 'galleryVideos' ? 'video/*' : 'image/*';
+    input.onchange = async e => {
+      if (e.target.files[0]) {
+        setUploading(k);
+        try {
+          const url = await uploadFile(e.target.files[0]);
+          setMForm(p => ({ ...p, [k]: [...(p[k] || []), url] }));
+        } catch (err) { alert("Upload failed"); }
+        finally { setUploading(null); }
+      }
+    };
+    input.click();
+  };
+  const rmMedia = async (k, i) => {
+    const newList = mForm[k].filter((_, idx) => idx !== i);
+    const newConfig = { ...mForm, [k]: newList };
+    setMForm(newConfig);
+    // Auto-save to reflect changes immediately
+    await saveConfig('media', newConfig);
+  };
+
+  const addProduct = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('/api/products', { ...form, price: parseFloat(form.price), regularPrice: parseFloat(form.regularPrice) });
+      setAdding(false);
+      reloadData();
+    } catch (err) { alert("Failed to add product"); }
+  };
+
+  const deleteProduct = async (id) => {
+    if (confirm("Delete product?")) {
+      await axios.delete(`/api/products/${id}`);
+      reloadData();
+    }
+  };
+
+  const updateOrderStatus = async (id, status) => {
+    await axios.put(`/api/orders/${id}/status`, { status });
+    const res = await axios.get('/api/orders'); setOrders(res.data);
+  };
+  const deleteOrder = async (id) => {
+    if (confirm("Delete order?")) {
+      await axios.delete(`/api/orders/${id}`);
+      const res = await axios.get('/api/orders'); setOrders(res.data);
+    }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-24 min-h-screen space-y-12 animate-in fade-in duration-500">
+      <div className="space-y-4">
+        <h1 className="text-4xl font-serif text-[#DA3A36] flex items-center gap-3 italic"><Settings /> Command Console</h1>
+        <div className="flex gap-3 border-b border-[#DA3A36]/10 pb-4 overflow-x-auto no-scrollbar scroll-smooth">
+          {[
+            { id: 'inventory', label: 'Inventory', icon: <Package size={14} /> },
+            { id: 'orders', label: 'Orders', icon: <ClipboardList size={14} /> },
+            { id: 'storefront', label: 'Marquee', icon: <Zap size={14} /> },
+            { id: 'media', label: 'Media', icon: <ImageIcon size={14} /> },
+            { id: 'shipping', label: 'Shipping', icon: <Truck size={14} /> },
+            { id: 'faqs', label: 'FAQs', icon: <HelpCircle size={14} /> }
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-8 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${tab === t.id ? 'bg-[#DA3A36] text-white shadow-xl scale-105' : 'bg-white/40 text-[#DA3A36]/50 hover:bg-white'}`}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === 'inventory' && (
+        <div className="space-y-10">
+          <button onClick={() => setAdding(true)} className="bg-[#DA3A36] text-white px-10 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl border-2 border-[#F6D55F] hover:scale-105 transition"><Plus size={20} /> Publish New Product</button>
+          <div className="grid gap-6">
+            {products.map(p => (
+              <div key={p.id} className="bg-white border border-[#FED3C7] rounded-[2rem] p-6 flex items-center justify-between shadow-sm hover:shadow-md transition">
+                <div className="flex items-center gap-6">
+                  <img src={p.imageUrl} className="w-20 h-20 object-cover rounded-2xl shadow-inner border" alt="" />
+                  <div className="space-y-1">
+                    <div className="font-serif text-2xl italic text-[#4A0404]">{p.name} <span className="text-[10px] bg-[#DA3A36]/10 text-[#DA3A36] px-3 py-1 rounded-full ml-2">{p.category}</span></div>
+                  </div>
+                </div>
+                <button onClick={() => deleteProduct(p.id)} className="text-red-400 p-4 hover:bg-red-50 rounded-full transition"><Trash2 size={24} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Orders, Media, Configs sections simplified but functional */}
+      {tab === 'orders' && (
+        <div className="grid gap-8">
+          {orders.map(order => (
+            <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
+              <div className="flex justify-between">
+                <h3 className="font-serif text-3xl">{order.customer?.name} - {order.status}</h3>
+                <select onChange={(e) => updateOrderStatus(order.id, e.target.value)} value={order.status}>
+                  <option>Pending</option><option>Shipped</option><option>Delivered</option>
+                </select>
+                <button onClick={() => deleteOrder(order.id)} className="text-red-500"><Trash2 /></button>
+              </div>
+              <div>Total: ₹{order.total}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'media' && (
+        <div className="grid md:grid-cols-2 gap-12">
+          {['heroImages', 'momentImages', 'galleryVideos'].map(k => (
+            <div key={k} className="bg-white p-10 rounded-[3rem] border border-[#DA3A36]/10 shadow-xl space-y-8">
+              <div className="flex justify-between items-center text-xs font-bold uppercase text-[#DA3A36]">
+                <span>{k}</span>
+                <div className="flex gap-2">
+                  {uploading === k ? (
+                    <div className="flex items-center gap-2 text-[#DA3A36] animate-pulse">
+                      <Zap size={18} className="animate-spin" /> Uploading...
+                    </div>
+                  ) : (
+                    <>
+                      <button onClick={() => addMediaUrl(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Add URL"><Plus size={18} /></button>
+                      <button onClick={() => uploadMedia(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Upload File"><Upload size={18} /></button>
+                    </>
+                  )}
+                </div>
+              </div>
+              {(mForm[k] || []).map((u, i) => <div key={i} className="flex justify-between items-center p-2"><span className="truncate w-64">{u}</span><button onClick={() => rmMedia(k, i)}><Trash2 /></button></div>)}
+              <button onClick={() => saveConfig('media', mForm)} className="bg-[#DA3A36] text-white px-4 py-2 rounded-xl">Save</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'shipping' && (
+        <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl max-w-xl mx-auto space-y-10 text-center">
+          <h3 className="font-serif text-3xl text-[#DA3A36] italic">Delivery Logistics</h3>
+          <div className="space-y-8 text-left">
+            <div>
+              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Shipping Fee (₹)</label>
+              <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.fee} onChange={e => setDForm({ ...dForm, fee: parseInt(e.target.value) || 0 })} />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Free Threshold (₹)</label>
+              <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.threshold} onChange={e => setDForm({ ...dForm, threshold: parseInt(e.target.value) || 0 })} />
+            </div>
+            <button onClick={() => saveConfig('delivery', dForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Sync Shipping Rules</button>
+          </div>
+        </div>
+      )}
+
+      {tab === 'storefront' && (
+        <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-8 max-w-2xl mx-auto">
+          <h3 className="font-serif text-3xl text-[#DA3A36] italic">Marquee Broadcast</h3>
+          <textarea className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" rows={4} value={nForm.text} onChange={e => setNForm({ ...nForm, text: e.target.value })} />
+          <input type="number" className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" value={nForm.speed} onChange={e => setNForm({ ...nForm, speed: parseInt(e.target.value) })} />
+          <button onClick={() => saveConfig('flashnews', nForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-widest shadow-xl border-2 border-[#F6D55F]">Apply Broadcast Update</button>
+        </div>
+      )}
+
+      {tab === 'faqs' && (
+        <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-10 max-w-3xl mx-auto">
+          <div className="flex justify-between items-center font-serif text-3xl text-[#DA3A36] italic">Knowledge Base <button onClick={() => setFaqForm([...fForm, { question: '', answer: '' }])} className="p-4 bg-[#DA3A36] text-white rounded-full"><Plus size={24} /></button></div>
+          <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
+            {fForm.map((f, i) => (
+              <div key={i} className="p-8 bg-[#F4E6C5]/20 rounded-[2rem] border border-[#FED3C7] space-y-4 relative">
+                <button onClick={() => setFaqForm(fForm.filter((_, idx) => idx !== i))} className="absolute top-6 right-6 text-red-400"><Trash2 size={18} /></button>
+                <input className="w-full bg-white p-4 rounded-xl text-sm font-bold shadow-inner" placeholder="Question" value={f.question} onChange={e => { const n = [...fForm]; n[i].question = e.target.value; setFaqForm(n); }} />
+                <textarea className="w-full bg-white p-4 rounded-xl text-xs leading-relaxed" placeholder="Answer" rows={3} value={f.answer} onChange={e => { const n = [...fForm]; n[i].answer = e.target.value; setFaqForm(n); }} />
+              </div>
+            ))}
+          </div>
+          <button onClick={() => saveConfig('faqs', { items: fForm })} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-2xl border-2 border-[#F6D55F]">Deploy FAQ Update</button>
+        </div>
+      )}
+
+      {adding && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+          <form onSubmit={addProduct} className="bg-[#F4E6C5] p-10 rounded-[3rem] w-full max-w-lg space-y-6 shadow-2xl relative my-10 border border-white">
+            <h3 className="text-3xl font-serif text-[#DA3A36] italic">New Indulgence</h3>
+            <input className="w-full p-4 rounded-xl" placeholder="Name" onChange={e => setForm({ ...form, name: e.target.value })} />
+            <select className="w-full p-4 rounded-xl" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
+              <option value="Chocolates">Chocolates</option>
+              <option value="Gifts">Gifts & Extras</option>
+            </select>
+            <div className="flex gap-2">
+              <input className="w-full p-4 rounded-xl" placeholder="Price" onChange={e => setForm({ ...form, price: e.target.value })} />
+              <input className="w-full p-4 rounded-xl" placeholder="Regular Price" onChange={e => setForm({ ...form, regularPrice: e.target.value })} />
+            </div>
+            <textarea className="w-full p-4 rounded-xl" placeholder="Desc" onChange={e => setForm({ ...form, description: e.target.value })} />
+            <div className="flex gap-2 items-center">
+              <input className="w-full p-4 rounded-xl" placeholder="Image URL" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} />
+              <button type="button" onClick={() => {
+                const input = document.createElement('input'); input.type = 'file';
+                input.onchange = async e => {
+                  if (e.target.files[0]) {
+                    setUploading('product');
+                    try {
+                      const u = await uploadFile(e.target.files[0]);
+                      setForm({ ...form, imageUrl: u });
+                    } catch (err) { alert("Failed"); }
+                    finally { setUploading(null); }
+                  }
+                };
+                input.click();
+              }} className="bg-[#DA3A36] text-white p-4 rounded-xl min-w-[100px] flex justify-center">
+                {uploading === 'product' ? <Zap size={20} className="animate-spin" /> : 'Upload'}
+              </button>
+            </div>
+            <button type="submit" className="w-full bg-[#DA3A36] text-white py-4 rounded-xl">Publish</button>
+            <button type="button" onClick={() => setAdding(false)} className="absolute top-4 right-4"><Trash2 /></button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SuccessView({ setView }) {
+  return (
+    <div className="h-[85vh] flex flex-col items-center justify-center text-center px-6 space-y-10 animate-in zoom-in duration-1000">
+      <div className="p-8 bg-white rounded-full shadow-2xl relative"><CheckCircle size={100} className="text-green-500" /></div>
+      <div className="space-y-4">
+        <h1 className="text-6xl font-serif italic text-[#DA3A36] leading-tight">Order Captured!</h1>
+        <p className="opacity-50 max-w-sm mx-auto text-sm leading-relaxed uppercase tracking-widest font-bold">Thank you for feeding the flame.</p>
+      </div>
+      <button onClick={() => setView('home')} className="bg-[#DA3A36] text-white px-20 py-5 rounded-full font-bold uppercase tracking-[0.3em] border-2 border-[#F6D55F] shadow-2xl transition hover:scale-110 active:scale-95 text-xs">Return to Sanctuary</button>
+    </div>
+  );
+}

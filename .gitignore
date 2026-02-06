@@ -1,0 +1,22 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+
+# Production
+build
+dist
+
+# Misc
+.DS_Store
+.env
+server/.env
+client/.env
+.npmrc
+*.log
+.vercel
+luvbees.sqlite
+server/luvbees.sqlite

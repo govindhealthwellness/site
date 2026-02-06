@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primaryRed: #DA3A36;
+  --color-yellow: #F6D55F;
+  --color-cream: #F4E6C5;
+  --color-darkText: #4A0404;
+  --color-blush: #FED3C7;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
