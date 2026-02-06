@@ -8,6 +8,10 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
+if (import.meta.env.VITE_API_URL) {
+  axios.defaults.baseURL = import.meta.env.VITE_API_URL;
+}
+
 // --- Theme & Style Constants ---
 const THEME = {
   primaryRed: '#DA3A36',
