@@ -9,43 +9,67 @@ let sqliteDb = null;
 let useSqlite = false;
 
 async function getDb() {
-  if (useSqlite) return sqliteDb;
+  if (useSqlite && sqliteDb) return sqliteDb;
+  if (mysqlPool) return mysqlPool;
 
-  if (!mysqlPool) {
-    try {
-      console.log("Attempting MySQL Connection...");
-      let tempPool;
-      if (process.env.DATABASE_URL) {
-        tempPool = mysql.createPool(process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'ssl={"rejectUnauthorized":false}');
-      } else {
-        tempPool = mysql.createPool({
-          host: process.env.DB_HOST || 'luvbees-govindhealthwellness.d.aivencloud.com',
-          port: process.env.DB_PORT || 12252,
-          user: process.env.DB_USER || 'avnadmin',
-          password: process.env.DB_PASSWORD,
-          database: process.env.DB_NAME || 'defaultdb',
-          ssl: { rejectUnauthorized: false },
-          waitForConnections: true,
-          connectionLimit: 10,
-          queueLimit: 0,
-          connectTimeout: 5000
-        });
+  try {
+    console.log("Attempting MySQL Connection...");
+    let tempPool;
+    const connectionString = process.env.DATABASE_URL;
+
+    if (connectionString) {
+      // Handle SSL for connection string
+      const sslSuffix = (connectionString.includes('?') ? '&' : '?') + 'ssl={"rejectUnauthorized":false}';
+      tempPool = mysql.createPool(connectionString + sslSuffix);
+    } else {
+      // Check for individual variables
+      if (!process.env.DB_PASSWORD) {
+        throw new Error("Missing DATABASE_URL or DB_PASSWORD in environment variables");
       }
-      await tempPool.getConnection();
-      console.log("MySQL Connected Successfully!");
-      mysqlPool = tempPool;
-    } catch (err) {
-      console.error("MySQL Connection Failed (likely IP restriction). Switching to Local SQLite.");
-      useSqlite = true;
+      tempPool = mysql.createPool({
+        host: process.env.DB_HOST || 'luvbees-govindhealthwellness.d.aivencloud.com',
+        port: process.env.DB_PORT || 12252,
+        user: process.env.DB_USER || 'avnadmin',
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME || 'defaultdb',
+        ssl: { rejectUnauthorized: false },
+        waitForConnections: true,
+        connectionLimit: 5,
+        queueLimit: 0,
+        connectTimeout: 5000
+      });
+    }
+
+    // Test connection
+    const conn = await tempPool.getConnection();
+    conn.release();
+    console.log("MySQL Connected Successfully!");
+    mysqlPool = tempPool;
+    return mysqlPool;
+
+  } catch (err) {
+    console.error("MySQL Connection Failed:", err.message);
+
+    // If we're on Vercel, don't even try SQLite (it won't work)
+    if (process.env.VERCEL) {
+      throw new Error("Database Connection Failed. Please check your Vercel Environment Variables and Aiven IP restrictions.");
+    }
+
+    console.log("Switching to Local SQLite...");
+    useSqlite = true;
+    try {
       sqliteDb = await open({
         filename: path.join(__dirname, 'luvbees.sqlite'),
         driver: sqlite3.Database
       });
       await initSqliteSchema(sqliteDb);
       return sqliteDb;
+    } catch (sqliteErr) {
+      useSqlite = false; // Reset if sqlite also fails
+      console.error("SQLite failed to initialize:", sqliteErr.message);
+      throw new Error("All database connection attempts failed.");
     }
   }
-  return mysqlPool;
 }
 
 async function initSqliteSchema(db) {
