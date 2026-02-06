@@ -19,11 +19,11 @@ async function getDb() {
         tempPool = mysql.createPool(process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'ssl={"rejectUnauthorized":false}');
       } else {
         tempPool = mysql.createPool({
-          host: 'luvbees-govindhealthwellness.d.aivencloud.com',
-          port: 12252,
-          user: 'avnadmin',
+          host: process.env.DB_HOST || 'luvbees-govindhealthwellness.d.aivencloud.com',
+          port: process.env.DB_PORT || 12252,
+          user: process.env.DB_USER || 'avnadmin',
           password: process.env.DB_PASSWORD,
-          database: 'defaultdb',
+          database: process.env.DB_NAME || 'defaultdb',
           ssl: { rejectUnauthorized: false },
           waitForConnections: true,
           connectionLimit: 10,
