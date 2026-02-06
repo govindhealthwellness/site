@@ -14,18 +14,23 @@ async function getDb() {
   if (!mysqlPool) {
     try {
       console.log("Attempting MySQL Connection...");
-      const tempPool = mysql.createPool({
-        host: 'luvbees-govindhealthwellness.d.aivencloud.com',
-        port: 12252,
-        user: 'avnadmin',
-        password: process.env.DB_PASSWORD,
-        database: 'defaultdb',
-        ssl: { rejectUnauthorized: false },
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
-        connectTimeout: 5000
-      });
+      let tempPool;
+      if (process.env.DATABASE_URL) {
+        tempPool = mysql.createPool(process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'ssl={"rejectUnauthorized":false}');
+      } else {
+        tempPool = mysql.createPool({
+          host: 'luvbees-govindhealthwellness.d.aivencloud.com',
+          port: 12252,
+          user: 'avnadmin',
+          password: process.env.DB_PASSWORD,
+          database: 'defaultdb',
+          ssl: { rejectUnauthorized: false },
+          waitForConnections: true,
+          connectionLimit: 10,
+          queueLimit: 0,
+          connectTimeout: 5000
+        });
+      }
       await tempPool.getConnection();
       console.log("MySQL Connected Successfully!");
       mysqlPool = tempPool;
