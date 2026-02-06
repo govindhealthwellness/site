@@ -19,8 +19,8 @@
             "destination": "/server/index.js"
         },
         {
-            "source": "/(.*)",
-            "destination": "/client/index.html"
+            "source": "/((?!assets/|favicon.ico|luvbees.png|heart-flame.png).*)",
+            "destination": "/index.html"
         }
     ]
 }
