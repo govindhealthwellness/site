@@ -740,6 +740,109 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
     doc.save(`order_${order.id}.pdf`);
   };
 
+  const downloadOrdersReport = (period) => {
+    const now = new Date();
+    let startDate, endDate, periodLabel;
+
+    // Calculate date range based on period
+    if (period === 'weekly') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+      endDate = now;
+      periodLabel = 'Weekly Report (Last 7 Days)';
+    } else if (period === 'monthly') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = now;
+      periodLabel = `Monthly Report (${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
+    } else if (period === 'yearly') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+      endDate = now;
+      periodLabel = `Yearly Report (${now.getFullYear()})`;
+    }
+
+    // Filter orders by date range
+    const filteredOrders = orders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= startDate && orderDate <= endDate;
+    });
+
+    if (filteredOrders.length === 0) {
+      alert(`No orders found for ${periodLabel.toLowerCase()}`);
+      return;
+    }
+
+    // Calculate statistics
+    const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseFloat(order.total || 0), 0);
+    const totalOrders = filteredOrders.length;
+    const avgOrderValue = totalRevenue / totalOrders;
+    const statusCounts = filteredOrders.reduce((acc, order) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Generate PDF
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFontSize(24);
+    doc.setTextColor(218, 58, 54);
+    doc.text("LUVBEES", 105, 20, { align: "center" });
+
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(periodLabel, 105, 30, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated: ${now.toLocaleString()}`, 105, 37, { align: "center" });
+
+    // Summary Statistics
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text("ORDER SUMMARY", 14, 50);
+
+    doc.setFontSize(10);
+    doc.text(`Total Orders: ${totalOrders}`, 14, 58);
+    doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`, 14, 64);
+    doc.text(`Average Order Value: ₹${avgOrderValue.toFixed(2)}`, 14, 70);
+
+    // Status breakdown
+    let statusY = 76;
+    Object.entries(statusCounts).forEach(([status, count]) => {
+      doc.text(`${status}: ${count} orders`, 14, statusY);
+      statusY += 6;
+    });
+
+    // Orders Table
+    const tableData = filteredOrders.map(order => [
+      `#${order.id}`,
+      new Date(order.created_at).toLocaleDateString(),
+      order.customer?.name || 'N/A',
+      order.customer?.phone || 'N/A',
+      (order.items || []).length + ' items',
+      `₹${order.total}`,
+      order.status
+    ]);
+
+    autoTable(doc, {
+      startY: statusY + 5,
+      head: [['Order ID', 'Date', 'Customer', 'Phone', 'Items', 'Total', 'Status']],
+      body: tableData,
+      headStyles: { fillColor: [218, 58, 54], fontSize: 9 },
+      bodyStyles: { fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 18 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 22 },
+        6: { cellWidth: 22 }
+      }
+    });
+
+    doc.save(`luvbees_${period}_report_${now.toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-24 min-h-screen space-y-12 animate-in fade-in duration-500">
       <div className="space-y-4">
@@ -784,60 +887,96 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
       )}
 
       {tab === 'orders' && (
-        <div className="grid gap-8">
-          {orders.map(order => (
-            <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
-              <div className="flex justify-between items-start">
-                <div className="space-y-4">
-                  <h3 className="font-serif text-3xl text-[#DA3A36] italic">{order.customer?.name}</h3>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-1">
-                      <div className="font-bold uppercase text-[10px] opacity-40">Contact Details</div>
-                      <div className="opacity-70">{order.customer?.phone}</div>
-                      <div className="opacity-70">{order.customer?.email || 'No Email'}</div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="font-bold uppercase text-[10px] opacity-40">Shipping Address</div>
-                      <div className="opacity-70 leading-relaxed max-w-xs">{order.customer?.address}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <select
-                    onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                    value={order.status}
-                    className="p-3 bg-[#F4E6C5]/30 rounded-xl text-xs font-bold border-none outline-none"
-                  >
-                    <option>Pending</option><option>Shipped</option><option>Delivered</option>
-                  </select>
-                  <div className="flex gap-2 justify-end">
-                    <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
-                    <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
-                  </div>
-                </div>
+        <div className="space-y-8">
+          {/* Report Download Section */}
+          <div className="bg-white border border-[#DA3A36]/10 rounded-[2rem] p-8 shadow-xl">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h3 className="font-serif text-2xl text-[#DA3A36] italic mb-2">Download Orders Report</h3>
+                <p className="text-sm opacity-60">Generate comprehensive sales reports for different time periods</p>
               </div>
-
-              <div className="border-t border-[#DA3A36]/5 pt-6">
-                <div className="font-bold uppercase text-[10px] opacity-40 mb-4">Ordered Items</div>
-                <div className="space-y-3">
-                  {(order.items || []).map((it, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-sm">
-                      <div className="flex gap-3 items-center">
-                        <div className="w-8 h-8 bg-[#DA3A36]/5 rounded-lg flex items-center justify-center font-bold text-[#DA3A36] text-[10px]">{it.qty}x</div>
-                        <span className="font-serif italic">{it.name}</span>
-                      </div>
-                      <span className="opacity-60">₹{it.price * it.qty}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center pt-6 border-t border-[#DA3A36]/5">
-                <div className="text-[10px] uppercase font-bold opacity-30">Order Total</div>
-                <div className="text-3xl font-serif italic text-[#DA3A36]">₹{order.total}</div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => downloadOrdersReport('weekly')}
+                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+                >
+                  <Download size={16} />
+                  Weekly
+                </button>
+                <button
+                  onClick={() => downloadOrdersReport('monthly')}
+                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+                >
+                  <Download size={16} />
+                  Monthly
+                </button>
+                <button
+                  onClick={() => downloadOrdersReport('yearly')}
+                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+                >
+                  <Download size={16} />
+                  Yearly
+                </button>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Orders List */}
+          <div className="grid gap-8">
+            {orders.map(order => (
+              <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-4">
+                    <h3 className="font-serif text-3xl text-[#DA3A36] italic">{order.customer?.name}</h3>
+                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <div className="font-bold uppercase text-[10px] opacity-40">Contact Details</div>
+                        <div className="opacity-70">{order.customer?.phone}</div>
+                        <div className="opacity-70">{order.customer?.email || 'No Email'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="font-bold uppercase text-[10px] opacity-40">Shipping Address</div>
+                        <div className="opacity-70 leading-relaxed max-w-xs">{order.customer?.address}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <select
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                      value={order.status}
+                      className="p-3 bg-[#F4E6C5]/30 rounded-xl text-xs font-bold border-none outline-none"
+                    >
+                      <option>Pending</option><option>Shipped</option><option>Delivered</option>
+                    </select>
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
+                      <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-[#DA3A36]/5 pt-6">
+                  <div className="font-bold uppercase text-[10px] opacity-40 mb-4">Ordered Items</div>
+                  <div className="space-y-3">
+                    {(order.items || []).map((it, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-sm">
+                        <div className="flex gap-3 items-center">
+                          <div className="w-8 h-8 bg-[#DA3A36]/5 rounded-lg flex items-center justify-center font-bold text-[#DA3A36] text-[10px]">{it.qty}x</div>
+                          <span className="font-serif italic">{it.name}</span>
+                        </div>
+                        <span className="opacity-60">₹{it.price * it.qty}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-6 border-t border-[#DA3A36]/5">
+                  <div className="text-[10px] uppercase font-bold opacity-30">Order Total</div>
+                  <div className="text-3xl font-serif italic text-[#DA3A36]">₹{order.total}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
