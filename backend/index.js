@@ -153,7 +153,28 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 app.get('/api/orders', async (req, res) => {
     try {
         const [rows] = await dbQuery('SELECT * FROM orders ORDER BY created_at DESC');
-        res.json(rows);
+
+        // Transform data: parse JSON and map customer_info to customer for frontend compatibility
+        const orders = rows.map(order => {
+            let customer_info = order.customer_info;
+            let items = order.items;
+
+            // Parse JSON if they're strings
+            if (typeof customer_info === 'string') {
+                try { customer_info = JSON.parse(customer_info); } catch (e) { customer_info = {}; }
+            }
+            if (typeof items === 'string') {
+                try { items = JSON.parse(items); } catch (e) { items = []; }
+            }
+
+            return {
+                ...order,
+                customer: customer_info, // Map customer_info to customer for frontend
+                items: items
+            };
+        });
+
+        res.json(orders);
     } catch (err) {
         console.error('[API] Error fetching orders:', err);
         res.status(500).json({ error: err.message });
