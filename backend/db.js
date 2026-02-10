@@ -14,7 +14,7 @@ function createPool() {
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME || 'defaultdb',
         ssl: {
-            rejectUnauthorized: true,
+            rejectUnauthorized: false,
             minVersion: 'TLSv1.2'
         },
         waitForConnections: true,
