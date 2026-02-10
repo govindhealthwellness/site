@@ -783,34 +783,71 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
     const doc = new jsPDF();
 
     // Header
-    doc.setFontSize(24);
+    doc.setFontSize(26);
     doc.setTextColor(218, 58, 54);
     doc.text("LUVBEES", 105, 20, { align: "center" });
 
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setTextColor(0, 0, 0);
     doc.text(periodLabel, 105, 30, { align: "center" });
 
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
     doc.text(`Generated: ${now.toLocaleString()}`, 105, 37, { align: "center" });
 
-    // Summary Statistics
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text("ORDER SUMMARY", 14, 50);
+    // Summary Statistics Box with Background
+    doc.setFillColor(254, 211, 199); // Light pink background (#FED3C7)
+    doc.roundedRect(14, 45, 182, 45, 3, 3, 'F');
 
+    // Border for the box
+    doc.setDrawColor(218, 58, 54);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, 45, 182, 45, 3, 3, 'S');
+
+    // Title
+    doc.setFontSize(14);
+    doc.setTextColor(218, 58, 54);
+    doc.text("SALES SUMMARY", 105, 53, { align: "center" });
+
+    // Statistics in grid layout
     doc.setFontSize(10);
-    doc.text(`Total Orders: ${totalOrders}`, 14, 58);
-    doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`, 14, 64);
-    doc.text(`Average Order Value: ₹${avgOrderValue.toFixed(2)}`, 14, 70);
+    doc.setTextColor(0, 0, 0);
 
-    // Status breakdown
-    let statusY = 76;
-    Object.entries(statusCounts).forEach(([status, count]) => {
-      doc.text(`${status}: ${count} orders`, 14, statusY);
-      statusY += 6;
-    });
+    // Row 1: Total Orders and Total Revenue
+    doc.setFont(undefined, 'bold');
+    doc.text("Total Orders:", 20, 64);
+    doc.text("Total Revenue:", 110, 64);
+
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(16);
+    doc.setTextColor(218, 58, 54);
+    doc.text(`${totalOrders}`, 55, 64);
+    doc.text(`₹${totalRevenue.toFixed(2)}`, 155, 64);
+
+    // Row 2: Average Order Value and Status
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text("Avg Order Value:", 20, 74);
+    doc.text("Order Status:", 110, 74);
+
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(218, 58, 54);
+    doc.text(`₹${avgOrderValue.toFixed(2)}`, 55, 74);
+
+    // Status counts (compact)
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    let statusText = Object.entries(statusCounts).map(([status, count]) => `${status}: ${count}`).join(' | ');
+    doc.text(statusText, 145, 74);
+
+    // Additional metrics row
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("Period:", 20, 84);
+    doc.setFont(undefined, 'normal');
+    doc.text(`${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`, 42, 84);
 
     // Orders Table
     const tableData = filteredOrders.map(order => [
@@ -824,21 +861,36 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
     ]);
 
     autoTable(doc, {
-      startY: statusY + 5,
+      startY: 98,
       head: [['Order ID', 'Date', 'Customer', 'Phone', 'Items', 'Total', 'Status']],
       body: tableData,
-      headStyles: { fillColor: [218, 58, 54], fontSize: 9 },
+      headStyles: {
+        fillColor: [218, 58, 54],
+        fontSize: 9,
+        fontStyle: 'bold'
+      },
       bodyStyles: { fontSize: 8 },
+      alternateRowStyles: { fillColor: [254, 243, 231] }, // Light beige
       columnStyles: {
-        0: { cellWidth: 18 },
+        0: { cellWidth: 18, fontStyle: 'bold' },
         1: { cellWidth: 25 },
         2: { cellWidth: 35 },
         3: { cellWidth: 25 },
         4: { cellWidth: 18 },
-        5: { cellWidth: 22 },
+        5: { cellWidth: 22, fontStyle: 'bold', textColor: [218, 58, 54] },
         6: { cellWidth: 22 }
       }
     });
+
+    // Footer with grand total
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFillColor(218, 58, 54);
+    doc.roundedRect(14, finalY, 182, 15, 3, 3, 'F');
+
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text(`GRAND TOTAL: ₹${totalRevenue.toFixed(2)}`, 105, finalY + 10, { align: "center" });
 
     doc.save(`luvbees_${period}_report_${now.toISOString().split('T')[0]}.pdf`);
   };
