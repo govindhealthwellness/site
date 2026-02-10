@@ -15,11 +15,11 @@ async function getDb() {
         try {
             console.log("Attempting MySQL Connection...");
             const tempPool = mysql.createPool({
-                host: 'luvbees-govindhealthwellness.d.aivencloud.com',
+                host: process.env.DB_HOST || 'luvbees-govindhealthwellness.d.aivencloud.com',
                 port: 12252,
-                user: 'avnadmin',
+                user: process.env.DB_USER || 'avnadmin',
                 password: process.env.DB_PASSWORD,
-                database: 'defaultdb',
+                database: process.env.DB_NAME || 'defaultdb',
                 ssl: { rejectUnauthorized: false },
                 waitForConnections: true,
                 connectionLimit: 10,
@@ -30,10 +30,14 @@ async function getDb() {
             console.log("MySQL Connected Successfully!");
             mysqlPool = tempPool;
         } catch (err) {
-            console.error("MySQL Connection Failed (likely IP restriction). Switching to Local SQLite.");
+            console.error("MySQL Connection Failed. Switching to Local SQLite (Ephemeral on Vercel).");
             useSqlite = true;
+
+            // On Vercel, we must use /tmp/ as standard path is read-only
+            const sqlitePath = process.env.VERCEL ? path.join('/tmp', 'luvbees.sqlite') : path.join(__dirname, 'luvbees.sqlite');
+
             sqliteDb = await open({
-                filename: path.join(__dirname, 'luvbees.sqlite'),
+                filename: sqlitePath,
                 driver: sqlite3.Database
             });
             await initSqliteSchema(sqliteDb);
