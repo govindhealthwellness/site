@@ -74,13 +74,13 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
-// Configs (General getter/setter) - Updated for existing 'config' table schema
+// Configs (General getter/setter)
 app.get('/api/configs/:key', async (req, res) => {
     try {
-        const [rows] = await dbQuery('SELECT config_data FROM config WHERE config_type = ?', [req.params.key]);
+        const [rows] = await dbQuery('SELECT value FROM configs WHERE key_name = ?', [req.params.key]);
         if (rows.length > 0) {
-            let val = rows[0].config_data;
-            // MySQL JSON columns are already parsed as objects
+            let val = rows[0].value;
+            // MySQL JSON columns return objects directly
             res.json(val);
         } else {
             res.status(404).json({ error: 'Config not found' });
@@ -96,22 +96,10 @@ app.post('/api/configs/:key', async (req, res) => {
         const key = req.params.key;
         const value = JSON.stringify(req.body);
 
-        // Check if config exists
-        const [existing] = await dbQuery('SELECT id FROM config WHERE config_type = ?', [key]);
-
-        if (existing.length > 0) {
-            // Update existing config
-            await dbQuery(
-                'UPDATE config SET config_data = ?, updated_at = CURRENT_TIMESTAMP WHERE config_type = ?',
-                [value, key]
-            );
-        } else {
-            // Insert new config
-            await dbQuery(
-                'INSERT INTO config (config_type, config_data, created_at, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-                [key, value]
-            );
-        }
+        await dbQuery(
+            'INSERT INTO configs (key_name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?',
+            [key, value, value]
+        );
 
         res.json({ success: true });
     } catch (err) {
