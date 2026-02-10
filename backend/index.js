@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
@@ -14,14 +13,13 @@ app.use(cors());
 app.use(express.json());
 
 // Cloudinary Config
-// Cloudinary Config
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Razorpay Config (Use env vars in real app, defaults here for structure)
+// Razorpay Config
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET
@@ -31,14 +29,35 @@ const razorpay = new Razorpay({
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// Health check endpoint for debugging
+app.get('/api/health', async (req, res) => {
+    try {
+        await testConnection();
+        res.json({
+            status: 'ok',
+            database: 'MySQL connected',
+            env: {
+                hasDbPassword: !!process.env.DB_PASSWORD,
+                hasCloudinary: !!process.env.CLOUDINARY_CLOUD_NAME,
+                hasRazorpay: !!process.env.RAZORPAY_KEY_ID
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            database: 'MySQL connection failed',
+            error: error.message,
+            code: error.code
+        });
+    }
+});
+
 // --- Routes ---
 
 // Products
 app.get('/api/products', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM products');
-        // Convert decimal strings to numbers if needed, though JS handles quite a bit.
-        // React code expected numbers for price.
+        const [rows] = await dbQuery('SELECT * FROM products');
         const products = rows.map(p => ({
             ...p,
             price: Number(p.price),
@@ -47,7 +66,7 @@ app.get('/api/products', async (req, res) => {
         }));
         res.json(products);
     } catch (err) {
-        console.error(err);
+        console.error('[API] Error fetching products:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -55,21 +74,23 @@ app.get('/api/products', async (req, res) => {
 app.post('/api/products', async (req, res) => {
     try {
         const { name, price, regularPrice, description, imageUrl, category, active } = req.body;
-        const [result] = await pool.query(
+        const [result] = await dbQuery(
             'INSERT INTO products (name, price, regularPrice, description, imageUrl, category, active) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [name, price, regularPrice, description, imageUrl, category, active]
         );
         res.json({ id: result.insertId, ...req.body });
     } catch (err) {
+        console.error('[API] Error creating product:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
-        await pool.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+        await dbQuery('DELETE FROM products WHERE id = ?', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
+        console.error('[API] Error deleting product:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -113,7 +134,6 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).send('No file uploaded.');
 
-        // Upload to Cloudinary stream
         const b64 = Buffer.from(req.file.buffer).toString('base64');
         let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
 
@@ -124,12 +144,12 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
         res.json({ url: result.secure_url });
     } catch (err) {
-        console.error("Cloudinary Error:", err);
+        console.error("[API] Cloudinary Error:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// Orders - Updated for existing schema
+// Orders
 app.get('/api/orders', async (req, res) => {
     try {
         const [rows] = await dbQuery('SELECT * FROM orders ORDER BY created_at DESC');
@@ -142,16 +162,11 @@ app.get('/api/orders', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
     try {
-        const { customer_info, items, subtotal, shipCost, total, status = 'Pending', payment_id, razorpay_order_id } = req.body;
-
-        // Extract customer details from customer_info object
-        const customer_name = customer_info?.name || '';
-        const customer_phone = customer_info?.phone || '';
-        const customer_address = customer_info?.address || '';
+        const { customer_info, items, subtotal, shipCost, total, status = 'Pending' } = req.body;
 
         const [result] = await dbQuery(
-            'INSERT INTO orders (customer_name, customer_phone, customer_address, subtotal, shipping_cost, total, status, payment_id, razorpay_order_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [customer_name, customer_phone, customer_address, subtotal, shipCost, total, status, payment_id || null, razorpay_order_id || null]
+            'INSERT INTO orders (customer_info, items, subtotal, shipCost, total, status) VALUES (?, ?, ?, ?, ?, ?)',
+            [JSON.stringify(customer_info), JSON.stringify(items), subtotal, shipCost, total, status]
         );
         res.json({ id: result.insertId, ...req.body });
     } catch (err) {
@@ -193,15 +208,15 @@ app.post('/api/create-razorpay-order', async (req, res) => {
         const order = await razorpay.orders.create(options);
         res.json(order);
     } catch (error) {
+        console.error('[API] Razorpay error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
     app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
+        console.log(`[SERVER] Running on port ${PORT}`);
     });
 }
 
