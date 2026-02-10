@@ -14,15 +14,16 @@ function createPool() {
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME || 'defaultdb',
         ssl: {
-            rejectUnauthorized: false
+            rejectUnauthorized: true,
+            minVersion: 'TLSv1.2'
         },
         waitForConnections: true,
-        connectionLimit: 10,
+        connectionLimit: 5,
         queueLimit: 0,
-        connectTimeout: 10000,
-        acquireTimeout: 10000,
+        connectTimeout: 20000,
         enableKeepAlive: true,
-        keepAliveInitialDelay: 0
+        keepAliveInitialDelay: 10000,
+        charset: 'utf8mb4'
     };
 
     console.log('[DB] Creating MySQL pool with config:', {
@@ -30,7 +31,8 @@ function createPool() {
         port: config.port,
         user: config.user,
         database: config.database,
-        hasPassword: !!config.password
+        hasPassword: !!config.password,
+        ssl: 'enabled'
     });
 
     if (!config.password) {
