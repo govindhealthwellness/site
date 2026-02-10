@@ -183,11 +183,15 @@ app.get('/api/orders', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
     try {
-        const { customer_info, items, subtotal, shipCost, total, status = 'Pending' } = req.body;
+        // Accept both 'customer' and 'customer_info' from frontend
+        const { customer, customer_info, items, subtotal, shipCost, total, status = 'Pending' } = req.body;
+
+        // Use whichever is provided
+        const customerData = customer || customer_info;
 
         const [result] = await dbQuery(
             'INSERT INTO orders (customer_info, items, subtotal, shipCost, total, status) VALUES (?, ?, ?, ?, ?, ?)',
-            [JSON.stringify(customer_info), JSON.stringify(items), subtotal, shipCost, total, status]
+            [JSON.stringify(customerData), JSON.stringify(items), subtotal, shipCost, total, status]
         );
         res.json({ id: result.insertId, ...req.body });
     } catch (err) {
