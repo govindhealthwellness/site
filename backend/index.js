@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const Razorpay = require('razorpay');
-const pool = require('./db');
+const { query: dbQuery, testConnection } = require('./db');
 
 dotenv.config();
 
