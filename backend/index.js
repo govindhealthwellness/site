@@ -74,20 +74,19 @@ app.delete('/api/products/:id', async (req, res) => {
     }
 });
 
-// Configs (General getter/setter)
+// Configs (General getter/setter) - Updated for existing 'config' table schema
 app.get('/api/configs/:key', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT value FROM configs WHERE key_name = ?', [req.params.key]);
+        const [rows] = await dbQuery('SELECT config_data FROM config WHERE config_type = ?', [req.params.key]);
         if (rows.length > 0) {
-            let val = rows[0].value;
-            if (typeof val === 'string') {
-                try { val = JSON.parse(val); } catch (e) { }
-            }
+            let val = rows[0].config_data;
+            // MySQL JSON columns are already parsed as objects
             res.json(val);
         } else {
             res.status(404).json({ error: 'Config not found' });
         }
     } catch (err) {
+        console.error('[API] Error fetching config:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -95,14 +94,28 @@ app.get('/api/configs/:key', async (req, res) => {
 app.post('/api/configs/:key', async (req, res) => {
     try {
         const key = req.params.key;
-        const value = JSON.stringify(req.body); // Ensure it's stored as JSON string if not auto-handled
-        // MySQL JSON type handles objects, but 'value' in query parameter depends on driver. 
-        // With mysql2 and JSON column, we usually pass the object directly or stringify.
-        // Let's use ON DUPLICATE KEY UPDATE
-        await pool.query('INSERT INTO configs (key_name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', [key, value, value]);
+        const value = JSON.stringify(req.body);
+
+        // Check if config exists
+        const [existing] = await dbQuery('SELECT id FROM config WHERE config_type = ?', [key]);
+
+        if (existing.length > 0) {
+            // Update existing config
+            await dbQuery(
+                'UPDATE config SET config_data = ?, updated_at = CURRENT_TIMESTAMP WHERE config_type = ?',
+                [value, key]
+            );
+        } else {
+            // Insert new config
+            await dbQuery(
+                'INSERT INTO config (config_type, config_data, created_at, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+                [key, value]
+            );
+        }
+
         res.json({ success: true });
     } catch (err) {
-        console.error(err);
+        console.error('[API] Error saving config:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -128,38 +141,33 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-// Orders
+// Orders - Updated for existing schema
 app.get('/api/orders', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
-        // Parse JSON fields
-        const orders = rows.map(o => {
-            let customer = o.customer_info;
-            let items = o.items;
-            if (typeof customer === 'string') try { customer = JSON.parse(customer); } catch (e) { }
-            if (typeof items === 'string') try { items = JSON.parse(items); } catch (e) { }
-            return {
-                ...o,
-                customer,
-                items
-            };
-        });
-        res.json(orders);
+        const [rows] = await dbQuery('SELECT * FROM orders ORDER BY created_at DESC');
+        res.json(rows);
     } catch (err) {
+        console.error('[API] Error fetching orders:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.post('/api/orders', async (req, res) => {
     try {
-        const { customer, items, subtotal, shipCost, total, status } = req.body;
-        // customer and items are objects/arrays, need to assume JSON column or stringify
-        const [result] = await pool.query(
-            'INSERT INTO orders (customer_info, items, subtotal, shipCost, total, status) VALUES (?, ?, ?, ?, ?, ?)',
-            [JSON.stringify(customer), JSON.stringify(items), subtotal, shipCost, total, status]
+        const { customer_info, items, subtotal, shipCost, total, status = 'Pending', payment_id, razorpay_order_id } = req.body;
+
+        // Extract customer details from customer_info object
+        const customer_name = customer_info?.name || '';
+        const customer_phone = customer_info?.phone || '';
+        const customer_address = customer_info?.address || '';
+
+        const [result] = await dbQuery(
+            'INSERT INTO orders (customer_name, customer_phone, customer_address, subtotal, shipping_cost, total, status, payment_id, razorpay_order_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [customer_name, customer_phone, customer_address, subtotal, shipCost, total, status, payment_id || null, razorpay_order_id || null]
         );
         res.json({ id: result.insertId, ...req.body });
     } catch (err) {
+        console.error('[API] Error creating order:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -167,18 +175,20 @@ app.post('/api/orders', async (req, res) => {
 app.put('/api/orders/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
-        await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
+        await dbQuery('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
         res.json({ success: true });
     } catch (err) {
+        console.error('[API] Error updating order status:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.delete('/api/orders/:id', async (req, res) => {
     try {
-        await pool.query('DELETE FROM orders WHERE id = ?', [req.params.id]);
+        await dbQuery('DELETE FROM orders WHERE id = ?', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
+        console.error('[API] Error deleting order:', err);
         res.status(500).json({ error: err.message });
     }
 });
