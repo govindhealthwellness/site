@@ -1,22 +1,18 @@
 # Dependencies
 node_modules
-.pnp
-.pnp.js
-
-# Testing
-coverage
-
-# Production
-build
 dist
+build
+
+# Sensitive
+.env
+frontend/.env
+backend/.env
+
+# Local DB
+*.sqlite
+backend/*.sqlite
 
 # Misc
 .DS_Store
-.env
-server/.env
-client/.env
-.npmrc
-*.log
 .vercel
-luvbees.sqlite
-server/luvbees.sqlite
+*.log

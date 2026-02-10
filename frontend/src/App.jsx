@@ -4,13 +4,14 @@ import {
   CheckCircle, Settings, Image as ImageIcon, Package, Play,
   HelpCircle, Zap, Video, Instagram, ShieldCheck, Award, Truck,
   MapPin, Sparkles, AlignLeft, Phone, Coffee, Gift, ArrowLeft,
-  ClipboardList, Upload, Volume2, VolumeX
+  ClipboardList, Upload, Download, Volume2, VolumeX
 } from 'lucide-react';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-if (import.meta.env.VITE_API_URL) {
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL;
-}
+// --- Axios Configuration ---
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
 // --- Theme & Style Constants ---
 const THEME = {
@@ -57,35 +58,37 @@ const HeartCursor = () => {
   return <div className="fixed pointer-events-none z-[9999] transition-transform duration-75" style={{ left: pos.x, top: pos.y, transform: 'translate(-50%, -50%)' }}><img src="/heart-flame.png" className="w-12 h-12 object-contain drop-shadow-lg" alt="" /></div>;
 };
 
-const CustomSlider = ({ items, type = 'image' }) => {
+const CustomSlider = ({ items, type = 'image', aspect = 'video' }) => {
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
   const next = () => setIdx((prev) => (prev + 1) % (items?.length || 1));
   const prev = () => setIdx((prev) => (prev - 1 + (items?.length || 1)) % (items?.length || 1));
 
-  if (!items || items.length === 0) return <div className="w-full aspect-video bg-white/10 rounded-2xl flex items-center justify-center italic opacity-30 border border-dashed border-[#DA3A36]">No {type}s configured in Admin</div>;
+  const aspectClass = aspect === 'video' ? 'aspect-video md:aspect-[21/9]' : 'aspect-[3/4] md:aspect-[21/9]';
+
+  if (!items || items.length === 0) return <div className={`w-full ${aspectClass} bg-white/10 rounded-2xl flex items-center justify-center italic opacity-30 border border-dashed border-[#DA3A36]`}>No {type}s configured in Admin</div>;
 
   return (
-    <div className="relative w-full aspect-video md:aspect-[21/9] overflow-hidden rounded-2xl border border-[#DA3A36]/20 group shadow-lg bg-black">
+    <div className={`relative w-full ${aspectClass} overflow-hidden rounded-3xl border border-[#DA3A36]/10 group shadow-2xl bg-black`}>
       <div className="absolute inset-0 flex transition-transform duration-500" style={{ transform: `translateX(-${idx * 100}%)` }}>
         {items.map((it, i) => {
           const instaMatch = it.includes('instagram.com') ? it.match(/(?:p|reel|reels)\/([a-zA-Z0-9_-]+)/) : null;
           return (
-            <div key={i} className="w-full flex-shrink-0 relative h-full flex items-center justify-center bg-black">
-              {type === 'image' ? <img src={it} className="w-full h-full object-cover" alt="" /> :
+            <div key={i} className="w-full flex-shrink-0 relative h-full flex items-center justify-center">
+              {type === 'image' ? <img src={it} className="w-full h-full object-cover" alt="" loading="lazy" decoding="async" /> :
                 (instaMatch ?
                   <iframe
                     src={`https://www.instagram.com/p/${instaMatch[1]}/embed/captioned/`}
-                    className="w-full h-full md:max-w-[540px] bg-white mx-auto"
+                    className="w-full h-full md:max-w-[540px] bg-white mx-auto shadow-2xl"
                     frameBorder="0"
                     scrolling="no"
                     allowtransparency="true"
                     allowFullScreen
+                    loading="lazy"
                   ></iframe>
                   : (it.includes('instagram.com') ?
                     <div className="w-full h-full bg-black flex items-center justify-center relative overflow-hidden">
                       <div className="text-center space-y-4">
-                        {/* Using Instagram icon if available, otherwise reuse Play or similar */}
                         <Play size={48} className="text-[#DA3A36] mx-auto animate-pulse" />
                         <div className="text-white/50 text-xs uppercase tracking-widest">Instagram Content</div>
                         <button onClick={() => window.open(it, '_blank')} className="bg-[#DA3A36] text-white px-6 py-2 rounded-full text-xs font-bold uppercase hover:scale-105 transition">View on Instagram</button>
@@ -153,7 +156,7 @@ export default function App() {
     socialPosts: []
   });
   const [faqs, setFaqs] = useState([]);
-  const [delivery, setDelivery] = useState({ fee: 50, threshold: 500 });
+  const [delivery, setDelivery] = useState({ fee: 50, threshold: 500, note: 'Buy above ₹500 for Free Delivery!' });
 
   // Refresh Data Trigger
   const [refresh, setRefresh] = useState(0);
@@ -249,7 +252,7 @@ export default function App() {
         {view === 'chocolate-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Chocolates" />}
         {view === 'gift-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Gifts" />}
         {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} />}
-        {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} freeThreshold={delivery.threshold} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} />}
+        {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} />}
         {view === 'admin' && <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} />}
         {view === 'success' && <SuccessView setView={setView} />}
       </main>
@@ -269,7 +272,18 @@ export default function App() {
   );
 }
 
-function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
+const BadgeItem = ({ icon, label }) => {
+  return (
+    <div className="flex flex-col items-center gap-2 md:gap-6 group">
+      <div className="w-10 h-10 md:w-20 md:h-20 rounded-full bg-white flex items-center justify-center border border-dashed md:border-2 border-[#DA3A36] group-hover:rotate-12 transition-transform shadow-sm">
+        <span className="text-[#DA3A36]">{icon}</span>
+      </div>
+      <span className="text-[6px] md:text-[10px] font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] opacity-50 text-center line-clamp-2">{label}</span>
+    </div>
+  );
+};;
+
+const HeroSection = ({ media, setView }) => {
   const [hIdx, setHIdx] = useState(0);
   useEffect(() => {
     if (!media.heroImages?.length || media.heroImages.length <= 1) return;
@@ -278,53 +292,61 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
   }, [media.heroImages]);
 
   return (
-    <div className="space-y-24 pb-24 animate-in fade-in duration-700">
-      <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 opacity-5 pointer-events-none z-10">
-          <svg width="100%" height="100%"><pattern id="hp" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M50 80 C20 60 0 40 0 20 C0 10 10 0 20 0 C30 0 40 10 50 20 C60 10 70 0 80 0 C90 0 100 10 100 20 C100 40 80 60 50 80 Z" fill={THEME.primaryRed} transform="scale(0.3) translate(50, 50)" /></pattern><rect width="100%" height="100%" fill="url(#hp)" /></svg>
+    <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 opacity-5 pointer-events-none z-10">
+        <svg width="100%" height="100%"><pattern id="hp" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M50 80 C20 60 0 40 0 20 C0 10 10 0 20 0 C30 0 40 10 50 20 C60 10 70 0 80 0 C90 0 100 10 100 20 C100 40 80 60 50 80 Z" fill={THEME.primaryRed} transform="scale(0.3) translate(50, 50)" /></pattern><rect width="100%" height="100%" fill="url(#hp)" /></svg>
+      </div>
+      {(media.heroImages || []).map((img, i) => (
+        <div key={i} className={`absolute inset-0 transition-opacity duration-1000 ${i === hIdx ? 'opacity-50' : 'opacity-0'}`}>
+          <img src={img} className="w-full h-full object-cover scale-110" alt="" loading="eager" decoding="async" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#F4E6C5]/40 via-transparent to-[#F4E6C5]" />
         </div>
-        {(media.heroImages || []).map((img, i) => (
-          <div key={i} className={`absolute inset-0 transition-opacity duration-2000 ${i === hIdx ? 'opacity-50' : 'opacity-0'}`}>
-            <img src={img} className="w-full h-full object-cover scale-110" alt="" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#F4E6C5]/40 via-transparent to-[#F4E6C5]" />
-          </div>
-        ))}
-        <div className="relative z-20 text-center px-6 max-w-4xl space-y-8 animate-in slide-in-from-bottom-10 duration-1000">
-          <div className="flex justify-center"><img src="/heart-flame.png" className="w-32 h-32 object-contain animate-pulse drop-shadow-xl" alt="" /></div>
-          <h1 className="text-6xl md:text-9xl font-serif italic text-[#DA3A36] leading-tight text-shadow">Feed the Flame, Naturally</h1>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolate Sanctuary</button>
-            <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gift Boutique</button>
-          </div>
+      ))}
+      <div className="relative z-20 text-center px-6 max-w-4xl space-y-8 animate-in slide-in-from-bottom-10 duration-1000">
+        <div className="flex justify-center"><img src="/heart-flame.png" className="w-32 h-32 object-contain animate-pulse drop-shadow-xl" alt="" /></div>
+        <h1 className="text-6xl md:text-9xl font-serif italic text-[#DA3A36] leading-tight text-shadow">Feed the Flame, Naturally</h1>
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolate Sanctuary</button>
+          <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gift Boutique</button>
         </div>
-      </section>
+      </div>
+    </section>
+  );
+};
+
+function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
+  return (
+    <div className="space-y-10 pb-12 animate-in fade-in duration-700">
+      <HeroSection media={media} setView={setView} />
+
       <section className="px-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-10">
+        <div className="flex items-center gap-4 mb-6">
           <div className="w-12 h-px bg-[#DA3A36]/30"></div>
           <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#DA3A36]">Moment Movements</h3>
           <div className="flex-1 h-px bg-[#DA3A36]/20"></div>
         </div>
-        <CustomSlider items={media.momentImages} />
+        <CustomSlider items={media.momentImages} aspect="portrait" />
       </section>
+
       <section className="px-6 max-w-7xl mx-auto space-y-16">
         <div className="text-center space-y-2">
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Chocolate Sanctuary</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Our Viral Vitality Chocolates</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 px-0 md:px-0">
           {products.filter(p => p.active && p.category === 'Chocolates').slice(0, 3).map(p => (
-            <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
-              <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+            <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+              <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
+                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
-              <h3 className="text-2xl font-serif text-[#4A0404] cursor-pointer" onClick={() => setProduct(p)}>{p.name}</h3>
-              <p className="text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
-              <div className="flex items-end gap-3 mb-8">
-                <div className="text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
-                {p.regularPrice > p.price && <div className="text-sm line-through opacity-20 font-normal mb-1">₹{p.regularPrice}</div>}
+              <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
+              <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
+              <div className="flex items-end gap-1 md:gap-3 mb-2 md:mb-8 mt-1 md:mt-0">
+                <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
+                {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20">
-                <ShoppingBag size={18} /> Buy Now
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-2 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-1 md:gap-2 group-hover:shadow-[#DA3A36]/20 text-[6px] md:text-sm">
+                <ShoppingBag size={10} className="md:w-[18px] md:h-[18px]" /> <span className="hidden md:inline">Buy Now</span><span className="md:hidden">Buy</span>
               </button>
             </div>
           ))}
@@ -337,20 +359,20 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Gift Boutique</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 px-0 md:px-0">
           {products.filter(p => p.active && p.category === 'Gifts').slice(0, 3).map(p => (
-            <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
-              <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+            <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+              <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
+                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
-              <h3 className="text-2xl font-serif text-[#4A0404] cursor-pointer" onClick={() => setProduct(p)}>{p.name}</h3>
-              <p className="text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
-              <div className="flex items-end gap-3 mb-8">
-                <div className="text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
-                {p.regularPrice > p.price && <div className="text-sm line-through opacity-20 font-normal mb-1">₹{p.regularPrice}</div>}
+              <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
+              <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
+              <div className="flex items-end gap-1 md:gap-3 mb-2 md:mb-8 mt-1 md:mt-0">
+                <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
+                {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20">
-                <ShoppingBag size={18} /> Buy Now
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-2 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-1 md:gap-2 group-hover:shadow-[#DA3A36]/20 text-[6px] md:text-sm">
+                <ShoppingBag size={10} className="md:w-[18px] md:h-[18px]" /> <span className="hidden md:inline">Buy Now</span><span className="md:hidden">Buy</span>
               </button>
             </div>
           ))}
@@ -358,23 +380,23 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         <div className="text-center pt-8"><button onClick={() => setView('gift-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore Gift Boutique</button></div>
       </section>
       <section className="px-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-10">
+        <div className="flex items-center gap-4 mb-6">
           <div className="w-12 h-px bg-[#DA3A36]/30"></div>
           <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-[#DA3A36]">Storytelling Gallery</h3>
           <div className="flex-1 h-px bg-[#DA3A36]/20"></div>
         </div>
-        <CustomSlider items={media.galleryVideos} type="video" />
+        <CustomSlider items={media.galleryVideos} type="video" aspect="portrait" />
       </section>
-      <section className="bg-[#FED3C7]/40 py-28 px-6 relative overflow-hidden">
+      <section className="bg-[#FED3C7]/40 py-12 md:py-20 px-6 relative overflow-hidden">
         <div className="absolute -top-20 -right-20 p-20 opacity-5 -rotate-12 pointer-events-none"><Sparkles size={400} className="text-[#DA3A36]" /></div>
         <div className="max-w-5xl mx-auto text-center space-y-16">
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Explore The Ingredients</h2>
-          <div className="grid md:grid-cols-3 gap-10 relative z-10">
-            {[{ n: 'Dark Chocolate', d: 'Mood booster', i: '🍫' }, { n: 'Ashwagandha', d: 'Stress relief', i: '🌿' }, { n: 'Maca Root', d: 'Vitality boost', i: '💪' }].map(ing => (
-              <div key={ing.n} className="p-10 bg-white rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all border border-[#FED3C7] group text-center">
-                <div className="text-5xl mb-6">{ing.i}</div>
-                <h4 className="font-serif text-2xl text-[#DA3A36] italic">{ing.n}</h4>
-                <p className="text-xs opacity-60 uppercase font-bold tracking-tighter mt-4">{ing.d}</p>
+          <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 relative z-10 px-0">
+            {[{ n: 'Dark Choc', d: 'Mood', i: '🍫' }, { n: 'Ashwa', d: 'Stress', i: '🌿' }, { n: 'Maca', d: 'Vitality', i: '💪' }].map(ing => (
+              <div key={ing.n} className="p-4 md:p-10 bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all border border-[#FED3C7] group text-center">
+                <div className="text-2xl md:text-5xl mb-2 md:mb-6">{ing.i}</div>
+                <h4 className="font-serif text-[10px] md:text-2xl text-[#DA3A36] italic leading-tight">{ing.n}</h4>
+                <p className="text-[6px] md:text-xs opacity-60 uppercase font-bold tracking-tighter mt-1 md:mt-4">{ing.d}</p>
               </div>
             ))}
           </div>
@@ -384,32 +406,21 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         <h2 className="text-4xl font-serif italic text-[#4A0404] mb-12">Common Inquiries</h2>
         <div className="space-y-1">{faqs.map((f, i) => <AccordionItem key={i} q={f.question} a={f.answer} />)}</div>
       </section>
-      <section className="bg-[#DA3A36] text-[#F4E6C5] py-32 px-6 text-center relative overflow-hidden">
-        <div className="max-w-4xl mx-auto relative z-10 space-y-16">
-          <h2 className="text-6xl font-serif italic text-shadow">The Heart of LuvBees</h2>
-          <p className="text-xl md:text-2xl leading-relaxed italic opacity-90 max-w-3xl mx-auto">"LuvBees was born from a desire to transform simple connection into unforgettable experiences."</p>
+      <section className="bg-[#DA3A36] text-[#F4E6C5] py-16 md:py-24 px-6 text-center relative overflow-hidden">
+        <div className="max-w-4xl mx-auto relative z-10 space-y-10">
+          <h2 className="text-4xl md:text-6xl font-serif italic text-shadow">The Heart of LuvBees</h2>
+          <p className="text-lg md:text-2xl leading-relaxed italic opacity-90 max-w-3xl mx-auto">"LuvBees was born from a desire to transform simple connection into unforgettable experiences."</p>
         </div>
       </section>
-      <section className="px-6 max-w-6xl mx-auto py-24">
-        <h2 className="text-3xl font-serif text-center mb-20 italic text-[#4A0404]/80">We are Certified</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
-          <BadgeItem icon={<ShieldCheck size={36} />} label="Secure SSL Payments" />
-          <BadgeItem icon={<Award size={36} />} label="Quality Assured" />
-          <BadgeItem icon={<MapPin size={36} />} label="Made In India" />
-          <BadgeItem icon={<Truck size={36} />} label="Fast Timely Delivery" />
+      <section className="px-6 max-w-6xl mx-auto py-12 md:py-20">
+        <h2 className="text-3xl font-serif text-center mb-10 md:mb-16 italic text-[#4A0404]/80">We are Certified</h2>
+        <div className="grid grid-cols-4 md:grid-cols-4 gap-2 md:gap-12 px-0">
+          <BadgeItem icon={<ShieldCheck className="w-6 h-6 md:w-9 md:h-9" />} label="Secure SSL" />
+          <BadgeItem icon={<Award className="w-6 h-6 md:w-9 md:h-9" />} label="Quality" />
+          <BadgeItem icon={<MapPin className="w-6 h-6 md:w-9 md:h-9" />} label="Made In India" />
+          <BadgeItem icon={<Truck className="w-6 h-6 md:w-9 md:h-9" />} label="Fast Delivery" />
         </div>
       </section>
-    </div>
-  );
-}
-
-function BadgeItem({ icon, label }) {
-  return (
-    <div className="flex flex-col items-center gap-6 group">
-      <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center border-2 border-dashed border-[#DA3A36] group-hover:rotate-12 transition-transform shadow-sm">
-        <span className="text-[#DA3A36]">{icon}</span>
-      </div>
-      <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-50 text-center">{label}</span>
     </div>
   );
 }
@@ -469,8 +480,8 @@ function ProductDetailView({ product, addToCart, setView }) {
   );
 }
 
-function CartView({ cart, setView, subtotal, shipCost, grandTotal, freeThreshold, remove, clearCart }) {
-  const [formData, setFormData] = useState({ name: '', phone: '', address: '' });
+function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, remove, clearCart }) {
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
   const [isOrdering, setIsOrdering] = useState(false);
 
   useEffect(() => {
@@ -478,7 +489,7 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, freeThreshold
   }, []);
 
   const handleCheckout = async () => {
-    if (!formData.name || !formData.phone || !formData.address) return;
+    if (!formData.name || !formData.phone || !formData.email || !formData.address) return;
     setIsOrdering(true);
     try {
       const orderData = {
@@ -560,22 +571,35 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, freeThreshold
           <h3 className="font-serif text-3xl italic text-[#DA3A36]">Guest Checkout</h3>
           <div className="space-y-4">
             <input placeholder="Full Name" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-            <input placeholder="Contact Phone" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+            <div className="grid md:grid-cols-2 gap-4">
+              <input placeholder="Phone" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+              <input placeholder="Email" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+            </div>
             <textarea placeholder="Shipping Address" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none min-h-[120px]" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
           </div>
 
           <div className="space-y-4 pt-8 border-t border-[#DA3A36]/10">
             <div className="flex justify-between text-xs font-bold uppercase opacity-40"><span>Subtotal</span><span>₹{subtotal}</span></div>
             <div className="flex justify-between items-center text-xs font-bold uppercase">
-              <span className="opacity-40">Delivery {subtotal < freeThreshold && <span className="text-[8px] text-[#DA3A36] italic">(Add ₹{freeThreshold - subtotal} for free)</span>}</span>
+              <span className="opacity-40">Delivery {subtotal < delivery.threshold && <span className="text-[8px] text-[#DA3A36] italic">(Add ₹{delivery.threshold - subtotal} for free)</span>}</span>
               <span className={shipCost === 0 ? "text-green-600 font-bold" : "opacity-40"}>{shipCost === 0 ? 'FREE' : `₹${shipCost}`}</span>
             </div>
-            <div className="text-4xl font-serif text-[#DA3A36] pt-6 flex justify-between italic"><span>Total</span><span>₹{grandTotal}</span></div>
+            <div className="text-4xl font-serif text-[#DA3A36] pt-6 flex justify-between italic items-end">
+              <span>Total</span>
+              <div className="text-right">
+                <span>₹{grandTotal}</span>
+              </div>
+            </div>
+            {delivery.note && (
+              <div className="text-[10px] text-[#DA3A36] font-bold uppercase tracking-widest bg-[#DA3A36]/5 p-3 rounded-lg text-center animate-pulse">
+                {delivery.note}
+              </div>
+            )}
           </div>
 
           <button
             onClick={handleCheckout}
-            disabled={!formData.name || !formData.phone || !formData.address || isOrdering}
+            disabled={!formData.name || !formData.phone || !formData.email || !formData.address || isOrdering}
             className="w-full bg-[#DA3A36] text-white py-6 rounded-[2rem] font-bold uppercase shadow-2xl disabled:opacity-30 border-2 border-[#F6D55F] transition-all"
           >
             {isOrdering ? 'Processing...' : 'Complete via Razorpay'}
@@ -677,6 +701,45 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
     }
   };
 
+  const downloadPDF = (order) => {
+    const doc = new jsPDF();
+    doc.setFontSize(22);
+    doc.setTextColor(218, 58, 54);
+    doc.text("LUVBEES ORDER RECORD", 105, 20, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Order ID: #${order.id}`, 14, 35);
+    doc.text(`Date: ${new Date(order.created_at || Date.now()).toLocaleString()}`, 14, 40);
+
+    doc.setFontSize(14);
+    doc.text("Customer Information", 14, 55);
+    doc.setFontSize(10);
+    doc.text(`Name: ${order.customer?.name || 'N/A'}`, 14, 62);
+    doc.text(`Phone: ${order.customer?.phone || 'N/A'}`, 14, 67);
+    doc.text(`Email: ${order.customer?.email || 'N/A'}`, 14, 72);
+    doc.text(`Address: ${order.customer?.address || 'N/A'}`, 14, 77);
+
+    autoTable(doc, {
+      startY: 85,
+      head: [['Product Name', 'Quantity', 'Price', 'Subtotal']],
+      body: (order.items || []).map(item => [
+        item.name,
+        item.qty,
+        `Rs. ${item.price}`,
+        `Rs. ${item.price * item.qty}`
+      ]),
+      headStyles: { fillColor: [218, 58, 54] }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.text(`Total Amount: Rs. ${order.total}`, 14, finalY);
+    doc.text(`Status: ${order.status}`, 14, finalY + 7);
+
+    doc.save(`order_${order.id}.pdf`);
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-24 min-h-screen space-y-12 animate-in fade-in duration-500">
       <div className="space-y-4">
@@ -720,19 +783,59 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
         </div>
       )}
 
-      {/* Orders, Media, Configs sections simplified but functional */}
       {tab === 'orders' && (
         <div className="grid gap-8">
           {orders.map(order => (
             <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
-              <div className="flex justify-between">
-                <h3 className="font-serif text-3xl">{order.customer?.name} - {order.status}</h3>
-                <select onChange={(e) => updateOrderStatus(order.id, e.target.value)} value={order.status}>
-                  <option>Pending</option><option>Shipped</option><option>Delivered</option>
-                </select>
-                <button onClick={() => deleteOrder(order.id)} className="text-red-500"><Trash2 /></button>
+              <div className="flex justify-between items-start">
+                <div className="space-y-4">
+                  <h3 className="font-serif text-3xl text-[#DA3A36] italic">{order.customer?.name}</h3>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <div className="font-bold uppercase text-[10px] opacity-40">Contact Details</div>
+                      <div className="opacity-70">{order.customer?.phone}</div>
+                      <div className="opacity-70">{order.customer?.email || 'No Email'}</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="font-bold uppercase text-[10px] opacity-40">Shipping Address</div>
+                      <div className="opacity-70 leading-relaxed max-w-xs">{order.customer?.address}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <select
+                    onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                    value={order.status}
+                    className="p-3 bg-[#F4E6C5]/30 rounded-xl text-xs font-bold border-none outline-none"
+                  >
+                    <option>Pending</option><option>Shipped</option><option>Delivered</option>
+                  </select>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
+                    <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
+                  </div>
+                </div>
               </div>
-              <div>Total: ₹{order.total}</div>
+
+              <div className="border-t border-[#DA3A36]/5 pt-6">
+                <div className="font-bold uppercase text-[10px] opacity-40 mb-4">Ordered Items</div>
+                <div className="space-y-3">
+                  {(order.items || []).map((it, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-sm">
+                      <div className="flex gap-3 items-center">
+                        <div className="w-8 h-8 bg-[#DA3A36]/5 rounded-lg flex items-center justify-center font-bold text-[#DA3A36] text-[10px]">{it.qty}x</div>
+                        <span className="font-serif italic">{it.name}</span>
+                      </div>
+                      <span className="opacity-60">₹{it.price * it.qty}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-6 border-t border-[#DA3A36]/5">
+                <div className="text-[10px] uppercase font-bold opacity-30">Order Total</div>
+                <div className="text-3xl font-serif italic text-[#DA3A36]">₹{order.total}</div>
+              </div>
             </div>
           ))}
         </div>
@@ -775,6 +878,16 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
             <div>
               <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Free Threshold (₹)</label>
               <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.threshold} onChange={e => setDForm({ ...dForm, threshold: parseInt(e.target.value) || 0 })} />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Delivery Note (Broadcasted at Checkout)</label>
+              <textarea
+                className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7] text-xs leading-relaxed"
+                placeholder="e.g. Buy above ₹500 get Free Delivery"
+                rows={3}
+                value={dForm.note || ''}
+                onChange={e => setDForm({ ...dForm, note: e.target.value })}
+              ></textarea>
             </div>
             <button onClick={() => saveConfig('delivery', dForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Sync Shipping Rules</button>
           </div>

@@ -10,10 +10,7 @@ const pool = require('./db');
 dotenv.config();
 
 const app = express();
-app.use(cors({
-    origin: process.env.FRONTEND_URL || ["http://localhost:5173", "http://localhost:3000"],
-    credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
 // Cloudinary Config
@@ -35,44 +32,6 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // --- Routes ---
-
-// Hidden Init Route (Run once to create tables)
-app.get('/api/init-database-tables', async (req, res) => {
-    try {
-        const isSqlite = pool.isSqlite();
-        const queries = [
-            `CREATE TABLE IF NOT EXISTS products (
-                id ${isSqlite ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'INT AUTO_INCREMENT PRIMARY KEY'},
-                name VARCHAR(255) NOT NULL,
-                price DECIMAL(10, 2) NOT NULL,
-                regularPrice DECIMAL(10, 2),
-                description TEXT,
-                imageUrl VARCHAR(2048),
-                category VARCHAR(50),
-                active BOOLEAN DEFAULT TRUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`,
-            `CREATE TABLE IF NOT EXISTS orders (
-                id ${isSqlite ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'INT AUTO_INCREMENT PRIMARY KEY'},
-                customer_info ${isSqlite ? 'TEXT' : 'JSON'},
-                items ${isSqlite ? 'TEXT' : 'JSON'},
-                subtotal DECIMAL(10, 2),
-                shipCost DECIMAL(10, 2),
-                total DECIMAL(10, 2),
-                status VARCHAR(50) DEFAULT 'Pending',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`,
-            `CREATE TABLE IF NOT EXISTS configs (
-                key_name VARCHAR(50) PRIMARY KEY,
-                value ${isSqlite ? 'TEXT' : 'JSON'}
-            )`
-        ];
-        for (const q of queries) await pool.query(q);
-        res.json({ success: true, message: "Tables created successfully" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
 // Products
 app.get('/api/products', async (req, res) => {
