@@ -274,8 +274,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F4E6C5] text-[#4A0404] font-sans selection:bg-[#E97D78] selection:text-white">
       <style>{`
-        @keyframes mq {0%{transform:translateX(100%);}100%{transform:translateX(-100%);}} 
-        .marquee-box {display:inline-block;white-space:nowrap;padding-left:100%;animation:mq linear infinite;}
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .animate-marquee { animation: marquee 30s linear infinite; }
         .text-shadow { text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
       `}</style>
       <HeartCursor />
@@ -304,12 +304,10 @@ export default function App() {
 
       {/* Marquee Flashnews */}
       <div className="bg-[#DA3A36] text-[#F6D55F] py-2 text-xs font-bold uppercase tracking-widest overflow-hidden shadow-md sticky top-0 z-[60]">
-        <div className="marquee-box" style={{ animationDuration: `${flashnews.speed}s` }}>
-          <span className="px-8">{flashnews.text}</span>
-          <span className="px-8">{flashnews.text}</span>
-          <span className="px-8">{flashnews.text}</span>
-          <span className="px-8">{flashnews.text}</span>
-          <span className="px-8">{flashnews.text}</span>
+        <div className="flex animate-marquee whitespace-nowrap">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="px-8 flex items-center gap-2">{flashnews.text} •</span>
+          ))}
         </div>
       </div>
 
@@ -346,7 +344,7 @@ export default function App() {
         {view === 'returns' && <ReturnView setView={setView} />}
       </main>
 
-      <footer className="bg-[#FED3C7] border-t border-[#DA3A36]/10 py-16 px-6 text-center">
+      <footer className="bg-[#FED3C7] border-t border-[#DA3A36]/10 py-8 px-6 text-center">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="flex justify-center gap-2 items-center text-[#DA3A36]">
             <Heart size={20} fill="currentColor" />
@@ -366,7 +364,7 @@ export default function App() {
           </div>
 
           <p className="text-xs opacity-60 tracking-widest pt-4">care.luvbees@gmail.com • Feed the Flame, Naturally</p>
-          <div className="pt-8 border-t border-black/5 text-[10px] opacity-30 uppercase tracking-widest">&copy; 2025 LuvBees • Developed by DarkPixel</div>
+          <div className="pt-8 border-t border-black/5 text-[10px] opacity-40 uppercase tracking-widest">&copy; 2025 LuvBees • Developed with ❤️ by <a href="https://darkpixels.in" target="_blank" className="font-bold underline hover:text-[#DA3A36] transition">DARKPIXELS</a></div>
         </div>
       </footer>
     </div>
@@ -414,8 +412,8 @@ const HeroSection = ({ media, setView }) => {
         <div className="flex justify-center"><img src="/heart-flame.png" className="w-32 h-32 object-contain animate-pulse drop-shadow-xl" alt="" /></div>
         <h1 className="text-6xl md:text-9xl font-serif italic text-[#DA3A36] leading-tight text-shadow">Feed the Flame, Naturally</h1>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolate Sanctuary</button>
-          <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-10 py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gift Boutique</button>
+          <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolate Sanctuary</button>
+          <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gift Boutique</button>
         </div>
       </div>
     </section>
@@ -424,7 +422,7 @@ const HeroSection = ({ media, setView }) => {
 
 function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
   return (
-    <div className="space-y-10 pb-12 animate-in fade-in duration-700">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-700">
       <HeroSection media={media} setView={setView} />
 
       <section className="px-6 max-w-7xl mx-auto">
@@ -530,7 +528,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         </div>
       </section>
 
-      <section className="px-6 max-w-5xl mx-auto pb-20 text-center opacity-50 space-y-4 animate-in fade-in slide-in-from-bottom-5">
+      <section className="px-6 max-w-5xl mx-auto pb-8 text-center opacity-50 space-y-2 animate-in fade-in slide-in-from-bottom-5">
         <div className="w-12 h-px bg-[#DA3A36]/30 mx-auto"></div>
         <div className="text-[10px] leading-relaxed text-[#4A0404]">
           <strong className="block mb-2 text-xs uppercase tracking-widest font-black">⚠ Disclaimer</strong>
