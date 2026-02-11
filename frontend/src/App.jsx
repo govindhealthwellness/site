@@ -235,7 +235,11 @@ export default function App() {
 
 
 
-  if (loading) return <div className="h-screen w-full bg-[#F4E6C5] flex items-center justify-center"><Heart className="animate-pulse text-[#DA3A36]" size={48} /></div>;
+  if (loading) return (
+    <div className="h-screen w-full bg-[#F4E6C5] flex items-center justify-center">
+      <img src="/heart-flame.png" className="w-24 h-24 object-contain animate-pulse drop-shadow-xl" alt="Loading..." />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#F4E6C5] text-[#4A0404] font-sans selection:bg-[#E97D78] selection:text-white">
