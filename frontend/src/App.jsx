@@ -531,8 +531,8 @@ function ShopView({ products, addToCart, setProduct, filter }) {
 }
 
 function ProductDetailView({ product, addToCart, setView }) {
-  if (!product) return null;
   const [activeImg, setActiveImg] = useState(0);
+  if (!product) return null;
   let images = [product.imageUrl];
   try {
     const parsed = JSON.parse(product.imageUrl);
