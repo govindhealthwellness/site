@@ -251,12 +251,21 @@ export default function App() {
   const grandTotal = subtotal + shipCost;
 
   const addToCart = (p) => {
+    let shouldOpen = cart.length === 0;
     setCart(prev => {
       const ex = prev.find(i => i.id === p.id);
       if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
       return [...prev, { ...p, qty: 1 }];
     });
-    setView('cart');
+    if (shouldOpen) setView('cart');
+    else alert("Added to cart!");
+  };
+
+  const updateQty = (id, delta) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === id) return { ...item, qty: Math.max(1, item.qty + delta) };
+      return item;
+    }));
   };
 
   const clearCart = () => setCart([]);
@@ -336,7 +345,7 @@ export default function App() {
         {view === 'chocolate-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Chocolates" />}
         {view === 'gift-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Gifts" />}
         {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} />}
-        {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} />}
+        {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} updateQty={updateQty} />}
         {view === 'admin' && (adminLoggedIn ? <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} /> : <AdminLoginView onLogin={() => setAdminLoggedIn(true)} />)}
         {view === 'success' && <SuccessView setView={setView} />}
         {view === 'privacy' && <PrivacyView setView={setView} />}
@@ -628,7 +637,7 @@ function ProductDetailView({ product, addToCart, setView }) {
   );
 }
 
-function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, remove, clearCart }) {
+function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, remove, clearCart, updateQty }) {
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
   const [isOrdering, setIsOrdering] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -723,7 +732,11 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
               <img src={i.imageUrl} className="w-24 h-24 object-cover rounded-2xl" alt="" />
               <div className="flex-1">
                 <h4 className="font-serif text-xl">{i.name}</h4>
-                <p className="text-xs opacity-30 italic">Qty: {i.qty}</p>
+                <div className="flex items-center gap-3 my-2">
+                  <button onClick={() => updateQty(i.id, -1)} className="w-6 h-6 rounded-full bg-[#DA3A36]/10 hover:bg-[#DA3A36] hover:text-white flex items-center justify-center font-bold text-[#DA3A36] transition">-</button>
+                  <span className="text-sm font-bold">{i.qty}</span>
+                  <button onClick={() => updateQty(i.id, 1)} className="w-6 h-6 rounded-full bg-[#DA3A36]/10 hover:bg-[#DA3A36] hover:text-white flex items-center justify-center font-bold text-[#DA3A36] transition">+</button>
+                </div>
                 <div className="font-bold text-[#DA3A36] text-lg">₹{i.price * i.qty}</div>
               </div>
               <button onClick={() => remove(i.id)} className="absolute -top-2 -right-2 bg-white text-red-400 p-3 rounded-full shadow-lg border border-[#FED3C7]"><Trash2 size={18} /></button>
