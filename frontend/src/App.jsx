@@ -4,7 +4,7 @@ import {
   CheckCircle, Settings, Image as ImageIcon, Package, Play,
   HelpCircle, Zap, Video, Instagram, ShieldCheck, Award, Truck,
   MapPin, Sparkles, AlignLeft, Phone, Coffee, Gift, ArrowLeft,
-  ClipboardList, Upload, Download, Volume2, VolumeX
+  ClipboardList, Upload, Download, Volume2, VolumeX, Facebook, FileText
 } from 'lucide-react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
@@ -64,7 +64,7 @@ const CustomSlider = ({ items, type = 'image', aspect = 'video' }) => {
   const next = () => setIdx((prev) => (prev + 1) % (items?.length || 1));
   const prev = () => setIdx((prev) => (prev - 1 + (items?.length || 1)) % (items?.length || 1));
 
-  const aspectClass = aspect === 'video' ? 'aspect-video md:aspect-[21/9]' : 'aspect-[3/4] md:aspect-[21/9]';
+  const aspectClass = aspect === 'video' ? 'aspect-video md:aspect-[21/9]' : 'aspect-[3/4]';
 
   if (!items || items.length === 0) return <div className={`w-full ${aspectClass} bg-white/10 rounded-2xl flex items-center justify-center italic opacity-30 border border-dashed border-[#DA3A36]`}>No {type}s configured in Admin</div>;
 
@@ -143,6 +143,55 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  // Age Verification State
+  const [ageVerified, setAgeVerified] = useState(false);
+  const [showAgeGate, setShowAgeGate] = useState(true);
+
+  useEffect(() => {
+    const verified = localStorage.getItem('ageVerified');
+    if (verified === 'true') {
+      setAgeVerified(true);
+      setShowAgeGate(false);
+    }
+  }, []);
+
+  const handleAgeVerify = (isOver18) => {
+    if (isOver18) {
+      localStorage.setItem('ageVerified', 'true');
+      setAgeVerified(true);
+      setShowAgeGate(false);
+    } else {
+      setAgeVerified(false);
+      // Stay on age gate but maybe show a message
+      alert("This site is restricted to adults (18+). You cannot enter.");
+      window.location.href = "https://www.google.com";
+    }
+  };
+
+  if (showAgeGate) {
+    return (
+      <div className="fixed inset-0 z-[99999] bg-[#4A0404] flex flex-col items-center justify-center text-center p-6 space-y-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+        <div className="bg-[#F4E6C5] p-12 rounded-[3rem] shadow-2xl max-w-2xl w-full border-4 border-[#DA3A36] space-y-8 animate-in zoom-in duration-500">
+          <img src="/heart-flame.png" className="w-32 h-32 mx-auto animate-pulse" alt="LuvBees" />
+          <h1 className="text-5xl md:text-6xl font-serif italic text-[#DA3A36]">Age Verification</h1>
+          <p className="text-[#4A0404] text-xl font-medium leading-relaxed">
+            This website promotes products of an intimate nature.<br />
+            Are you 18 years of age or older?
+          </p>
+          <div className="flex flex-col md:flex-row gap-6 justify-center pt-4">
+            <button onClick={() => handleAgeVerify(true)} className="bg-[#DA3A36] text-white px-12 py-5 rounded-full font-bold uppercase tracking-widest text-lg hover:scale-105 transition shadow-xl border-2 border-[#F6D55F]">
+              Yes, I am 18+
+            </button>
+            <button onClick={() => handleAgeVerify(false)} className="bg-white text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase tracking-widest text-lg hover:scale-105 transition shadow-xl border-2 border-[#DA3A36]">
+              No, Exit
+            </button>
+          </div>
+          <p className="text-xs opacity-50 uppercase tracking-widest">By entering, you agree to our terms of service.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Dynamic Configs
   const [flashnews, setFlashnews] = useState({ text: "Flashnews • India's viral chocolate • Free Shipping • Limited Stock", speed: 15 });
   const [media, setMedia] = useState({
@@ -199,6 +248,7 @@ export default function App() {
       if (ex) return prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i);
       return [...prev, { ...p, qty: 1 }];
     });
+    setView('cart');
   };
 
   const clearCart = () => setCart([]);
@@ -255,6 +305,9 @@ export default function App() {
         {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} />}
         {view === 'admin' && <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} />}
         {view === 'success' && <SuccessView setView={setView} />}
+        {view === 'privacy' && <PrivacyView setView={setView} />}
+        {view === 'terms' && <TermsView setView={setView} />}
+        {view === 'returns' && <ReturnView setView={setView} />}
       </main>
 
       <footer className="bg-[#FED3C7] border-t border-[#DA3A36]/10 py-16 px-6 text-center">
@@ -264,8 +317,20 @@ export default function App() {
             <h2 className="text-3xl font-serif uppercase tracking-widest">LuvBees</h2>
             <Heart size={20} fill="currentColor" />
           </div>
-          <p className="text-xs opacity-60 tracking-widest">care.luvbees@gmail.com • Feed the Flame, Naturally</p>
-          <div className="pt-12 border-t border-black/5 text-[10px] opacity-30 uppercase tracking-widest">&copy; 2025 LuvBees • Developed by DarkPixel</div>
+
+          <div className="flex justify-center gap-6">
+            <a href="https://www.facebook.com/people/LuvBees/61578752128120/" target="_blank" rel="noreferrer" className="text-[#DA3A36] hover:scale-110 transition p-2 bg-white/50 rounded-full"><Facebook size={20} /></a>
+            <a href="https://www.instagram.com/luvbeesofficial" target="_blank" rel="noreferrer" className="text-[#DA3A36] hover:scale-110 transition p-2 bg-white/50 rounded-full"><Instagram size={20} /></a>
+          </div>
+
+          <div className="flex justify-center flex-wrap gap-4 md:gap-8 text-[10px] uppercase font-bold tracking-widest opacity-50">
+            <button onClick={() => setView('privacy')} className="hover:text-[#DA3A36] transition">Privacy Policy</button>
+            <button onClick={() => setView('terms')} className="hover:text-[#DA3A36] transition">Terms & Conditions</button>
+            <button onClick={() => setView('returns')} className="hover:text-[#DA3A36] transition">Return Policy</button>
+          </div>
+
+          <p className="text-xs opacity-60 tracking-widest pt-4">care.luvbees@gmail.com • Feed the Flame, Naturally</p>
+          <div className="pt-8 border-t border-black/5 text-[10px] opacity-30 uppercase tracking-widest">&copy; 2025 LuvBees • Developed by DarkPixel</div>
         </div>
       </footer>
     </div>
@@ -421,6 +486,13 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <BadgeItem icon={<Truck className="w-6 h-6 md:w-9 md:h-9" />} label="Fast Delivery" />
         </div>
       </section>
+
+      <section className="px-6 max-w-5xl mx-auto pb-20 text-center opacity-50 space-y-4 animate-in fade-in slide-in-from-bottom-5">
+        <div className="w-12 h-px bg-[#DA3A36]/30 mx-auto"></div>
+        <p className="text-[10px] leading-relaxed uppercase tracking-widest font-bold text-[#4A0404]">
+          ⚠ Disclaimer: This product is not intended to diagnose, treat, cure, or prevent any disease. The statements regarding the ingredients are based on clinical studies referenced above. Individual results may vary. Consult your physician if you are pregnant, nursing, or have a medical condition before consuming this product. Keep out of reach of children.
+        </p>
+      </section>
     </div>
   );
 }
@@ -453,27 +525,61 @@ function ShopView({ products, addToCart, setProduct, filter }) {
 
 function ProductDetailView({ product, addToCart, setView }) {
   if (!product) return null;
+  const [activeImg, setActiveImg] = useState(0);
+  let images = [product.imageUrl];
+  try {
+    const parsed = JSON.parse(product.imageUrl);
+    if (Array.isArray(parsed) && parsed.length > 0) images = parsed;
+  } catch (e) { }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-20 min-h-[80vh] animate-in fade-in zoom-in duration-500">
       <button onClick={() => setView(product.category === 'Chocolates' ? 'chocolate-shop' : 'gift-shop')} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 mb-12 transition"><ArrowLeft size={16} /> Back to Catalog</button>
-      <div className="grid md:grid-cols-2 gap-16 items-center">
-        <div className="rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
-          <img src={product.imageUrl} className="w-full h-full object-cover aspect-square" alt="" />
+      <div className="grid md:grid-cols-2 gap-16 items-start">
+        <div className="space-y-6">
+          <div className="rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white aspect-square relative group bg-white">
+            <img src={images[activeImg]} className="w-full h-full object-cover transition duration-500" alt={product.name} />
+          </div>
+          {images.length > 1 && (
+            <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+              {images.map((img, i) => (
+                <button key={i} onClick={() => setActiveImg(i)} className={`flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all shadow-sm snap-start ${activeImg === i ? 'border-[#DA3A36] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}>
+                  <img src={img} className="w-full h-full object-cover" alt="" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="space-y-10">
+        <div className="space-y-10 sticky top-32">
           <div className="space-y-4">
             <span className="text-xs font-bold uppercase tracking-[0.4em] text-[#DA3A36] opacity-60">{product.category}</span>
-            <h1 className="text-5xl md:text-7xl font-serif italic leading-tight">{product.name}</h1>
+            <h1 className="text-5xl md:text-7xl font-serif italic leading-tight text-[#4A0404]">{product.name}</h1>
             <div className="flex items-center gap-4 pt-2">
               <span className="text-4xl font-bold text-[#DA3A36] italic">₹{product.price}</span>
+              {product.regularPrice > product.price && <span className="text-xl line-through opacity-30">₹{product.regularPrice}</span>}
             </div>
           </div>
-          <div className="p-8 bg-white rounded-[2rem] border border-[#FED3C7] shadow-inner space-y-4">
-            <p className="italic opacity-80 leading-loose">{product.description}</p>
+          <div className="p-8 bg-white rounded-[2rem] border border-[#FED3C7] shadow-inner space-y-4 leading-loose text-lg text-[#4A0404]/80">
+            <p className="italic">{product.description}</p>
           </div>
-          <button onClick={() => addToCart(product)} className="w-full bg-[#DA3A36] text-white py-6 rounded-[2rem] font-bold uppercase tracking-[0.2em] shadow-2xl hover:bg-[#E97D78] transition flex items-center justify-center gap-3 active:scale-95">
+          <button onClick={() => addToCart(product)} className="w-full bg-[#DA3A36] text-white py-6 rounded-[2rem] font-bold uppercase tracking-[0.2em] shadow-2xl hover:bg-[#E97D78] transition flex items-center justify-center gap-3 active:scale-95 text-lg border-2 border-[#F6D55F]">
             <ShoppingBag /> Add to Cart
           </button>
+
+          <div className="grid grid-cols-3 gap-4 pt-8 border-t border-[#DA3A36]/10">
+            <div className="text-center space-y-2">
+              <Truck className="mx-auto text-[#DA3A36] opacity-50" />
+              <div className="text-[10px] uppercase font-bold tracking-widest opacity-60">Fast Delivery</div>
+            </div>
+            <div className="text-center space-y-2">
+              <ShieldCheck className="mx-auto text-[#DA3A36] opacity-50" />
+              <div className="text-[10px] uppercase font-bold tracking-widest opacity-60">Secure Pay</div>
+            </div>
+            <div className="text-center space-y-2">
+              <Award className="mx-auto text-[#DA3A36] opacity-50" />
+              <div className="text-[10px] uppercase font-bold tracking-widest opacity-60">Top Quality</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -613,6 +719,7 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
 function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) {
   const [tab, setTab] = useState('inventory');
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null); // Updated State
   const [form, setForm] = useState({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: 'Chocolates', active: true });
   const [orders, setOrders] = useState([]);
 
@@ -674,13 +781,48 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
     await saveConfig('media', newConfig);
   };
 
-  const addProduct = async (e) => {
+  const startEdit = (p) => {
+    setEditingId(p.id);
+    let imgs = [];
+    try {
+      const parsed = JSON.parse(p.imageUrl);
+      if (Array.isArray(parsed)) imgs = parsed;
+      else if (p.imageUrl) imgs = [p.imageUrl];
+    } catch {
+      if (p.imageUrl) imgs = [p.imageUrl];
+    }
+    if (imgs.length === 0) imgs = [''];
+
+    setForm({ ...p, images: imgs });
+    setAdding(true);
+  };
+
+  const saveProduct = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/products', { ...form, price: parseFloat(form.price), regularPrice: parseFloat(form.regularPrice) });
+      let finalImages = form.images || (form.imageUrl ? [form.imageUrl] : []);
+      // Limit to 3 images
+      finalImages = finalImages.slice(0, 3).filter(i => i && i.trim() !== '');
+
+      const payload = {
+        ...form,
+        price: parseFloat(form.price),
+        regularPrice: parseFloat(form.regularPrice),
+        imageUrl: finalImages.length > 0 ? JSON.stringify(finalImages) : ''
+      };
+      // Remove temporary images array from payload
+      if ('images' in payload) delete payload.images;
+
+      if (editingId) {
+        await axios.put(`/api/products/${editingId}`, payload);
+      } else {
+        await axios.post('/api/products', payload);
+      }
       setAdding(false);
+      setEditingId(null);
+      setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', images: [], category: 'Chocolates', active: true });
       reloadData();
-    } catch (err) { alert("Failed to add product"); }
+    } catch (err) { alert("Failed to save product"); }
   };
 
   const deleteProduct = async (id) => {
@@ -921,7 +1063,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
 
       {tab === 'inventory' && (
         <div className="space-y-10">
-          <button onClick={() => setAdding(true)} className="bg-[#DA3A36] text-white px-10 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl border-2 border-[#F6D55F] hover:scale-105 transition"><Plus size={20} /> Publish New Product</button>
+          <button onClick={() => { setAdding(true); setEditingId(null); setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: 'Chocolates', active: true }); }} className="bg-[#DA3A36] text-white px-10 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl border-2 border-[#F6D55F] hover:scale-105 transition"><Plus size={20} /> Publish New Product</button>
           <div className="grid gap-6">
             {products.map(p => (
               <div key={p.id} className="bg-white border border-[#FED3C7] rounded-[2rem] p-6 flex items-center justify-between shadow-sm hover:shadow-md transition">
@@ -929,226 +1071,310 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
                   <img src={p.imageUrl} className="w-20 h-20 object-cover rounded-2xl shadow-inner border" alt="" />
                   <div className="space-y-1">
                     <div className="font-serif text-2xl italic text-[#4A0404]">{p.name} <span className="text-[10px] bg-[#DA3A36]/10 text-[#DA3A36] px-3 py-1 rounded-full ml-2">{p.category}</span></div>
+                    <div className="text-xs opacity-60">₹{p.price}</div>
                   </div>
                 </div>
-                <button onClick={() => deleteProduct(p.id)} className="text-red-400 p-4 hover:bg-red-50 rounded-full transition"><Trash2 size={24} /></button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => startEdit(p)} className="text-[#DA3A36] p-4 hover:bg-orange-50 rounded-full transition border border-transparent hover:border-[#DA3A36]/20"><Settings size={22} /></button>
+                  <button onClick={() => deleteProduct(p.id)} className="text-red-400 p-4 hover:bg-red-50 rounded-full transition"><Trash2 size={24} /></button>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      )}
+      )}        </div>
+  )
+}
 
-      {tab === 'orders' && (
-        <div className="space-y-8">
-          {/* Report Download Section */}
-          <div className="bg-white border border-[#DA3A36]/10 rounded-[2rem] p-8 shadow-xl">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <h3 className="font-serif text-2xl text-[#DA3A36] italic mb-2">Download Orders Report</h3>
-                <p className="text-sm opacity-60">Generate comprehensive sales reports for different time periods</p>
+{
+  tab === 'orders' && (
+    <div className="space-y-8">
+      {/* Report Download Section */}
+      <div className="bg-white border border-[#DA3A36]/10 rounded-[2rem] p-8 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <h3 className="font-serif text-2xl text-[#DA3A36] italic mb-2">Download Orders Report</h3>
+            <p className="text-sm opacity-60">Generate comprehensive sales reports for different time periods</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => downloadOrdersReport('weekly')}
+              className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+            >
+              <Download size={16} />
+              Weekly
+            </button>
+            <button
+              onClick={() => downloadOrdersReport('monthly')}
+              className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+            >
+              <Download size={16} />
+              Monthly
+            </button>
+            <button
+              onClick={() => downloadOrdersReport('yearly')}
+              className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+            >
+              <Download size={16} />
+              Yearly
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Orders List */}
+      <div className="grid gap-8">
+        {orders.map(order => (
+          <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
+            <div className="flex justify-between items-start">
+              <div className="space-y-4">
+                <h3 className="font-serif text-3xl text-[#DA3A36] italic">{order.customer?.name}</h3>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <div className="font-bold uppercase text-[10px] opacity-40">Contact Details</div>
+                    <div className="opacity-70">{order.customer?.phone}</div>
+                    <div className="opacity-70">{order.customer?.email || 'No Email'}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="font-bold uppercase text-[10px] opacity-40">Shipping Address</div>
+                    <div className="opacity-70 leading-relaxed max-w-xs">{order.customer?.address}</div>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => downloadOrdersReport('weekly')}
-                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+              <div className="flex flex-col gap-3">
+                <select
+                  onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                  value={order.status}
+                  className="p-3 bg-[#F4E6C5]/30 rounded-xl text-xs font-bold border-none outline-none"
                 >
-                  <Download size={16} />
-                  Weekly
-                </button>
-                <button
-                  onClick={() => downloadOrdersReport('monthly')}
-                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
-                >
-                  <Download size={16} />
-                  Monthly
-                </button>
-                <button
-                  onClick={() => downloadOrdersReport('yearly')}
-                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
-                >
-                  <Download size={16} />
-                  Yearly
-                </button>
+                  <option>Pending</option><option>Shipped</option><option>Delivered</option>
+                </select>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
+                  <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
+                </div>
               </div>
+            </div>
+
+            <div className="border-t border-[#DA3A36]/5 pt-6">
+              <div className="font-bold uppercase text-[10px] opacity-40 mb-4">Ordered Items</div>
+              <div className="space-y-3">
+                {(order.items || []).map((it, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-sm">
+                    <div className="flex gap-3 items-center">
+                      <div className="w-8 h-8 bg-[#DA3A36]/5 rounded-lg flex items-center justify-center font-bold text-[#DA3A36] text-[10px]">{it.qty}x</div>
+                      <span className="font-serif italic">{it.name}</span>
+                    </div>
+                    <span className="opacity-60">₹{it.price * it.qty}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-6 border-t border-[#DA3A36]/5">
+              <div className="text-[10px] uppercase font-bold opacity-30">Order Total</div>
+              <div className="text-3xl font-serif italic text-[#DA3A36]">₹{order.total}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+{
+  tab === 'media' && (
+    <div className="grid md:grid-cols-2 gap-12">
+      {['heroImages', 'momentImages', 'galleryVideos'].map(k => (
+        <div key={k} className="bg-white p-10 rounded-[3rem] border border-[#DA3A36]/10 shadow-xl space-y-8">
+          <div className="flex justify-between items-center text-xs font-bold uppercase text-[#DA3A36]">
+            <span>{k}</span>
+            <div className="flex gap-2">
+              {uploading === k ? (
+                <div className="flex items-center gap-2 text-[#DA3A36] animate-pulse">
+                  <Zap size={18} className="animate-spin" /> Uploading...
+                </div>
+              ) : (
+                <>
+                  <button onClick={() => addMediaUrl(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Add URL"><Plus size={18} /></button>
+                  <button onClick={() => uploadMedia(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Upload File"><Upload size={18} /></button>
+                </>
+              )}
+            </div>
+          </div>
+          {(mForm[k] || []).map((u, i) => <div key={i} className="flex justify-between items-center p-2"><span className="truncate w-64">{u}</span><button onClick={() => rmMedia(k, i)}><Trash2 /></button></div>)}
+          <button onClick={() => saveConfig('media', mForm)} className="bg-[#DA3A36] text-white px-4 py-2 rounded-xl">Save</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+{
+  tab === 'shipping' && (
+    <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl max-w-xl mx-auto space-y-10 text-center">
+      <h3 className="font-serif text-3xl text-[#DA3A36] italic">Delivery Logistics</h3>
+      <div className="space-y-8 text-left">
+        <div>
+          <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Shipping Fee (₹)</label>
+          <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.fee} onChange={e => setDForm({ ...dForm, fee: parseInt(e.target.value) || 0 })} />
+        </div>
+        <div>
+          <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Free Threshold (₹)</label>
+          <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.threshold} onChange={e => setDForm({ ...dForm, threshold: parseInt(e.target.value) || 0 })} />
+        </div>
+        <div>
+          <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Delivery Note (Broadcasted at Checkout)</label>
+          <textarea
+            className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7] text-xs leading-relaxed"
+            placeholder="e.g. Buy above ₹500 get Free Delivery"
+            rows={3}
+            value={dForm.note || ''}
+            onChange={e => setDForm({ ...dForm, note: e.target.value })}
+          ></textarea>
+        </div>
+        <button onClick={() => saveConfig('delivery', dForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Sync Shipping Rules</button>
+      </div>
+    </div>
+  )
+}
+
+{
+  tab === 'storefront' && (
+    <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-8 max-w-2xl mx-auto">
+      <h3 className="font-serif text-3xl text-[#DA3A36] italic">Marquee Broadcast</h3>
+      <textarea className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" rows={4} value={nForm.text} onChange={e => setNForm({ ...nForm, text: e.target.value })} />
+      <input type="number" className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" value={nForm.speed} onChange={e => setNForm({ ...nForm, speed: parseInt(e.target.value) })} />
+      <button onClick={() => saveConfig('flashnews', nForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-widest shadow-xl border-2 border-[#F6D55F]">Apply Broadcast Update</button>
+    </div>
+  )
+}
+
+{
+  tab === 'faqs' && (
+    <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-10 max-w-3xl mx-auto">
+      <div className="flex justify-between items-center font-serif text-3xl text-[#DA3A36] italic">Knowledge Base <button onClick={() => setFaqForm([...fForm, { question: '', answer: '' }])} className="p-4 bg-[#DA3A36] text-white rounded-full"><Plus size={24} /></button></div>
+      <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
+        {fForm.map((f, i) => (
+          <div key={i} className="p-8 bg-[#F4E6C5]/20 rounded-[2rem] border border-[#FED3C7] space-y-4 relative">
+            <button onClick={() => setFaqForm(fForm.filter((_, idx) => idx !== i))} className="absolute top-6 right-6 text-red-400"><Trash2 size={18} /></button>
+            <input className="w-full bg-white p-4 rounded-xl text-sm font-bold shadow-inner" placeholder="Question" value={f.question} onChange={e => { const n = [...fForm]; n[i].question = e.target.value; setFaqForm(n); }} />
+            <textarea className="w-full bg-white p-4 rounded-xl text-xs leading-relaxed" placeholder="Answer" rows={3} value={f.answer} onChange={e => { const n = [...fForm]; n[i].answer = e.target.value; setFaqForm(n); }} />
+          </div>
+        ))}
+      </div>
+      <button onClick={() => saveConfig('faqs', { items: fForm })} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-2xl border-2 border-[#F6D55F]">Deploy FAQ Update</button>
+    </div>
+  )
+}
+
+{
+  adding && (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+      <form onSubmit={saveProduct} className="bg-[#F4E6C5] p-10 rounded-[3rem] w-full max-w-lg space-y-6 shadow-2xl relative my-10 border border-white animate-in zoom-in duration-300">
+        <h3 className="text-3xl font-serif text-[#DA3A36] italic">{editingId ? 'Edit Indulgence' : 'New Indulgence'}</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Product Name</label>
+            <input className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Category</label>
+              <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
+                <option value="Chocolates">Chocolates</option>
+                <option value="Gifts">Gifts & Extras</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Status</label>
+              <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, active: e.target.value === 'true' })} value={form.active}>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
             </div>
           </div>
 
-          {/* Orders List */}
-          <div className="grid gap-8">
-            {orders.map(order => (
-              <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-4">
-                    <h3 className="font-serif text-3xl text-[#DA3A36] italic">{order.customer?.name}</h3>
-                    <div className="grid md:grid-cols-2 gap-4 text-sm">
-                      <div className="space-y-1">
-                        <div className="font-bold uppercase text-[10px] opacity-40">Contact Details</div>
-                        <div className="opacity-70">{order.customer?.phone}</div>
-                        <div className="opacity-70">{order.customer?.email || 'No Email'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="font-bold uppercase text-[10px] opacity-40">Shipping Address</div>
-                        <div className="opacity-70 leading-relaxed max-w-xs">{order.customer?.address}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <select
-                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                      value={order.status}
-                      className="p-3 bg-[#F4E6C5]/30 rounded-xl text-xs font-bold border-none outline-none"
-                    >
-                      <option>Pending</option><option>Shipped</option><option>Delivered</option>
-                    </select>
-                    <div className="flex gap-2 justify-end">
-                      <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
-                      <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-[#DA3A36]/5 pt-6">
-                  <div className="font-bold uppercase text-[10px] opacity-40 mb-4">Ordered Items</div>
-                  <div className="space-y-3">
-                    {(order.items || []).map((it, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <div className="flex gap-3 items-center">
-                          <div className="w-8 h-8 bg-[#DA3A36]/5 rounded-lg flex items-center justify-center font-bold text-[#DA3A36] text-[10px]">{it.qty}x</div>
-                          <span className="font-serif italic">{it.name}</span>
-                        </div>
-                        <span className="opacity-60">₹{it.price * it.qty}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-6 border-t border-[#DA3A36]/5">
-                  <div className="text-[10px] uppercase font-bold opacity-30">Order Total</div>
-                  <div className="text-3xl font-serif italic text-[#DA3A36]">₹{order.total}</div>
-                </div>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Price (₹)</label>
+              <input type="number" className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Price" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Regular Price (₹)</label>
+              <input type="number" className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Regular" value={form.regularPrice} onChange={e => setForm({ ...form, regularPrice: e.target.value })} />
+            </div>
           </div>
-        </div>
-      )}
 
-      {tab === 'media' && (
-        <div className="grid md:grid-cols-2 gap-12">
-          {['heroImages', 'momentImages', 'galleryVideos'].map(k => (
-            <div key={k} className="bg-white p-10 rounded-[3rem] border border-[#DA3A36]/10 shadow-xl space-y-8">
-              <div className="flex justify-between items-center text-xs font-bold uppercase text-[#DA3A36]">
-                <span>{k}</span>
-                <div className="flex gap-2">
-                  {uploading === k ? (
-                    <div className="flex items-center gap-2 text-[#DA3A36] animate-pulse">
-                      <Zap size={18} className="animate-spin" /> Uploading...
-                    </div>
-                  ) : (
-                    <>
-                      <button onClick={() => addMediaUrl(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Add URL"><Plus size={18} /></button>
-                      <button onClick={() => uploadMedia(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Upload File"><Upload size={18} /></button>
-                    </>
+          <div>
+            <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Description</label>
+            <textarea className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" rows={3} placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          </div>
+
+          <div>
+            <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Product Images (Max 3)</label>
+            <div className="space-y-3">
+              {(form.images && form.images.length > 0 ? form.images : ['']).map((img, idx) => (
+                <div key={idx} className="flex gap-2 items-center animate-in slide-in-from-left-4 fade-in">
+                  <span className="text-xs font-bold opacity-30 w-4">{idx + 1}</span>
+                  <input
+                    className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none"
+                    placeholder="Image URL"
+                    value={img}
+                    onChange={e => {
+                      const newImages = [...(form.images || [''])];
+                      newImages[idx] = e.target.value;
+                      setForm({ ...form, images: newImages });
+                    }}
+                  />
+                  <button type="button" onClick={() => {
+                    const input = document.createElement('input'); input.type = 'file';
+                    input.onchange = async e => {
+                      if (e.target.files[0]) {
+                        setUploading('product' + idx);
+                        try {
+                          const u = await uploadFile(e.target.files[0]);
+                          const newImages = [...(form.images || [''])];
+                          newImages[idx] = u;
+                          setForm(prev => ({ ...prev, images: newImages }));
+                        } catch (err) { alert("Failed"); }
+                        finally { setUploading(null); }
+                      }
+                    };
+                    input.click();
+                  }} className="bg-[#DA3A36] text-white p-4 rounded-xl min-w-[50px] flex justify-center shadow-lg hover:scale-105 transition">
+                    {uploading === 'product' + idx ? <Zap size={20} className="animate-spin" /> : <Upload size={20} />}
+                  </button>
+                  {idx > 0 && (
+                    <button type="button" onClick={() => {
+                      const newImages = form.images.filter((_, i) => i !== idx);
+                      setForm({ ...form, images: newImages });
+                    }} className="text-red-400 p-2 hover:bg-red-50 rounded-lg"><Trash2 size={20} /></button>
                   )}
                 </div>
-              </div>
-              {(mForm[k] || []).map((u, i) => <div key={i} className="flex justify-between items-center p-2"><span className="truncate w-64">{u}</span><button onClick={() => rmMedia(k, i)}><Trash2 /></button></div>)}
-              <button onClick={() => saveConfig('media', mForm)} className="bg-[#DA3A36] text-white px-4 py-2 rounded-xl">Save</button>
+              ))}
+              {(form.images?.length || 0) < 3 && (
+                <button type="button" onClick={() => setForm({ ...form, images: [...(form.images || ['']), ''] })} className="text-xs font-bold text-[#DA3A36] uppercase tracking-widest flex items-center gap-2 pl-6 hover:opacity-100 opacity-60 transition">
+                  <Plus size={14} /> Add Another Image
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      )}
-
-      {tab === 'shipping' && (
-        <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl max-w-xl mx-auto space-y-10 text-center">
-          <h3 className="font-serif text-3xl text-[#DA3A36] italic">Delivery Logistics</h3>
-          <div className="space-y-8 text-left">
-            <div>
-              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Shipping Fee (₹)</label>
-              <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.fee} onChange={e => setDForm({ ...dForm, fee: parseInt(e.target.value) || 0 })} />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Free Threshold (₹)</label>
-              <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.threshold} onChange={e => setDForm({ ...dForm, threshold: parseInt(e.target.value) || 0 })} />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Delivery Note (Broadcasted at Checkout)</label>
-              <textarea
-                className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7] text-xs leading-relaxed"
-                placeholder="e.g. Buy above ₹500 get Free Delivery"
-                rows={3}
-                value={dForm.note || ''}
-                onChange={e => setDForm({ ...dForm, note: e.target.value })}
-              ></textarea>
-            </div>
-            <button onClick={() => saveConfig('delivery', dForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Sync Shipping Rules</button>
           </div>
         </div>
-      )}
 
-      {tab === 'storefront' && (
-        <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-8 max-w-2xl mx-auto">
-          <h3 className="font-serif text-3xl text-[#DA3A36] italic">Marquee Broadcast</h3>
-          <textarea className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" rows={4} value={nForm.text} onChange={e => setNForm({ ...nForm, text: e.target.value })} />
-          <input type="number" className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" value={nForm.speed} onChange={e => setNForm({ ...nForm, speed: parseInt(e.target.value) })} />
-          <button onClick={() => saveConfig('flashnews', nForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-widest shadow-xl border-2 border-[#F6D55F]">Apply Broadcast Update</button>
+        <div className="pt-4">
+          <button type="submit" className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest shadow-2xl hover:bg-[#E97D78] transition active:scale-95 border-2 border-[#F6D55F]">
+            {editingId ? 'Update Indulgence' : 'Publish to Store'}
+          </button>
         </div>
-      )}
 
-      {tab === 'faqs' && (
-        <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-10 max-w-3xl mx-auto">
-          <div className="flex justify-between items-center font-serif text-3xl text-[#DA3A36] italic">Knowledge Base <button onClick={() => setFaqForm([...fForm, { question: '', answer: '' }])} className="p-4 bg-[#DA3A36] text-white rounded-full"><Plus size={24} /></button></div>
-          <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
-            {fForm.map((f, i) => (
-              <div key={i} className="p-8 bg-[#F4E6C5]/20 rounded-[2rem] border border-[#FED3C7] space-y-4 relative">
-                <button onClick={() => setFaqForm(fForm.filter((_, idx) => idx !== i))} className="absolute top-6 right-6 text-red-400"><Trash2 size={18} /></button>
-                <input className="w-full bg-white p-4 rounded-xl text-sm font-bold shadow-inner" placeholder="Question" value={f.question} onChange={e => { const n = [...fForm]; n[i].question = e.target.value; setFaqForm(n); }} />
-                <textarea className="w-full bg-white p-4 rounded-xl text-xs leading-relaxed" placeholder="Answer" rows={3} value={f.answer} onChange={e => { const n = [...fForm]; n[i].answer = e.target.value; setFaqForm(n); }} />
-              </div>
-            ))}
-          </div>
-          <button onClick={() => saveConfig('faqs', { items: fForm })} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-2xl border-2 border-[#F6D55F]">Deploy FAQ Update</button>
-        </div>
-      )}
-
-      {adding && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
-          <form onSubmit={addProduct} className="bg-[#F4E6C5] p-10 rounded-[3rem] w-full max-w-lg space-y-6 shadow-2xl relative my-10 border border-white">
-            <h3 className="text-3xl font-serif text-[#DA3A36] italic">New Indulgence</h3>
-            <input className="w-full p-4 rounded-xl" placeholder="Name" onChange={e => setForm({ ...form, name: e.target.value })} />
-            <select className="w-full p-4 rounded-xl" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
-              <option value="Chocolates">Chocolates</option>
-              <option value="Gifts">Gifts & Extras</option>
-            </select>
-            <div className="flex gap-2">
-              <input className="w-full p-4 rounded-xl" placeholder="Price" onChange={e => setForm({ ...form, price: e.target.value })} />
-              <input className="w-full p-4 rounded-xl" placeholder="Regular Price" onChange={e => setForm({ ...form, regularPrice: e.target.value })} />
-            </div>
-            <textarea className="w-full p-4 rounded-xl" placeholder="Desc" onChange={e => setForm({ ...form, description: e.target.value })} />
-            <div className="flex gap-2 items-center">
-              <input className="w-full p-4 rounded-xl" placeholder="Image URL" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} />
-              <button type="button" onClick={() => {
-                const input = document.createElement('input'); input.type = 'file';
-                input.onchange = async e => {
-                  if (e.target.files[0]) {
-                    setUploading('product');
-                    try {
-                      const u = await uploadFile(e.target.files[0]);
-                      setForm({ ...form, imageUrl: u });
-                    } catch (err) { alert("Failed"); }
-                    finally { setUploading(null); }
-                  }
-                };
-                input.click();
-              }} className="bg-[#DA3A36] text-white p-4 rounded-xl min-w-[100px] flex justify-center">
-                {uploading === 'product' ? <Zap size={20} className="animate-spin" /> : 'Upload'}
-              </button>
-            </div>
-            <button type="submit" className="w-full bg-[#DA3A36] text-white py-4 rounded-xl">Publish</button>
-            <button type="button" onClick={() => setAdding(false)} className="absolute top-4 right-4"><Trash2 /></button>
-          </form>
-        </div>
-      )}
+        <button type="button" onClick={() => setAdding(false)} className="absolute top-6 right-6 text-red-400 p-2 hover:bg-white rounded-full transition"><Trash2 size={24} /></button>
+      </form>
     </div>
+  )
+}
+    </div >
   );
 }
 
@@ -1164,3 +1390,72 @@ function SuccessView({ setView }) {
     </div>
   );
 }
+
+const InfoPage = ({ title, content, setView }) => (
+  <div className="max-w-4xl mx-auto px-6 py-24 min-h-screen space-y-8 animate-in fade-in bg-[#F4E6C5] text-[#4A0404]">
+    <div className="flex items-center gap-2 text-[#DA3A36] font-bold uppercase text-xs tracking-widest cursor-pointer opacity-60 hover:opacity-100 transition mb-8" onClick={() => setView('home')}>
+      <ArrowLeft size={16} /> Back to Sanctuary
+    </div>
+    <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-[#FED3C7] space-y-8">
+      <h1 className="text-4xl md:text-5xl font-serif italic text-[#DA3A36] text-center border-b border-[#DA3A36]/10 pb-8">{title}</h1>
+      <div className="prose prose-red max-w-none text-[#4A0404]/80 whitespace-pre-line leading-relaxed text-sm md:text-base selection:bg-[#FED3C7]">
+        {content}
+      </div>
+    </div>
+  </div>
+);
+
+const PrivacyView = ({ setView }) => (
+  <InfoPage setView={setView} title="Privacy Policy" content={`
+    **1. Introduction**
+    Welcome to LuvBees. We value your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.
+    Welcome to LuvBees. We value your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.
+
+    **2. Information We Collect**
+    We may collect, use, store and transfer different kinds of personal data about you which we have grouped together follows:
+    - Identity Data including first name, last name, username or similar identifier.
+    - Contact Data including billing address, delivery address, email address and telephone numbers.
+    - Transaction Data including details about payments to and from you and other details of products and services you have purchased from us.
+
+    **3. How We Use Your Personal Data**
+    We will only use your personal data when the law allows us to. Most commonly, we will use your personal data in the following circumstances:
+    - Where we need to perform the contract we are about to enter into or have entered into with you.
+    - Where it is necessary for our legitimate interests (or those of a third party) and your interests and fundamental rights do not override those interests.
+    - Where we need to comply with a legal or regulatory obligation.
+
+    **4. Data Security**
+    We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way, altered or disclosed.
+  `} />
+);
+
+const TermsView = ({ setView }) => (
+  <InfoPage setView={setView} title="Terms & Conditions" content={`
+    **1. Acceptance of Terms**
+    By accessing and using this website, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using this websites particular services, you shall be subject to any posted guidelines or rules applicable to such services.
+
+    **2. Use of Site**
+    You agree to use the site only for lawful purposes. You are prohibited from posting on or transmitting through the site any material that is unlawful, harmful, threatening, abusive, harassing, defamatory, vulgar, or otherwise objectionable.
+
+    **3. Product Description**
+    LuvBees attempts to be as accurate as possible. However, LuvBees does not warrant that product descriptions or other content of this site is accurate, complete, reliable, current, or error-free.
+
+    **4. Pricing**
+    All prices are subject to change without notice. We make every effort to provide you with the most accurate pricing information, but in the event that an item is listed at an incorrect price, we shall have the right to refuse or cancel any orders placed for that item.
+  `} />
+);
+
+const ReturnView = ({ setView }) => (
+  <InfoPage setView={setView} title="Return Policy" content={`
+    **1. Returns**
+    Due to the perishable and intimate nature of our products (chocolates, etc.), we generally do not accept returns. However, your satisfaction is our priority.
+
+    **2. Damaged or Defective Items**
+    If you receive a damaged or defective item, please contact us at care.luvbees@gmail.com within 24 hours of delivery. Please include your order number and creating photos of the damage. We will happily arrange a replacement or refund.
+
+    **3. Cancellations**
+    Orders can only be cancelled within 1 hour of placement. Once an order has been processed for shipping, it cannot be cancelled.
+
+    **4. Refunds**
+    If your return is approved, we will initiate a refund to your credit card (or original method of payment). You will receive the credit within a certain amount of days, depending on your card issuer's policies.
+  `} />
+);
