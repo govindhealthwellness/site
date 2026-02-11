@@ -163,6 +163,16 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
+// Admin Auth
+app.post('/api/admin/login', (req, res) => {
+    const { user, pass } = req.body;
+    if (user === (process.env.ADMIN_USER || 'LUV') && pass === (process.env.ADMIN_PASS || 'bees123')) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+});
+
 // Orders
 app.get('/api/orders', async (req, res) => {
     try {

@@ -146,6 +146,9 @@ export default function App() {
   // Age Verification State
   const [ageVerified, setAgeVerified] = useState(false);
   const [showAgeGate, setShowAgeGate] = useState(true);
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+
+  useEffect(() => { if (window.location.pathname === '/admin') setView('admin'); }, []);
 
   useEffect(() => {
     const verified = localStorage.getItem('ageVerified');
@@ -299,7 +302,7 @@ export default function App() {
             <ShoppingBag />
             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-[#F6D55F] text-black text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center animate-bounce shadow-md">{cart.reduce((a, b) => a + b.qty, 0)}</span>}
           </button>
-          <button onClick={() => setView('admin')} className="text-[10px] uppercase opacity-40 hover:opacity-100 font-bold tracking-widest transition border-l border-black/10 pl-4">Admin</button>
+
         </div>
       </nav>
 
@@ -309,7 +312,7 @@ export default function App() {
         {view === 'gift-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Gifts" />}
         {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} />}
         {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} />}
-        {view === 'admin' && <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} />}
+        {view === 'admin' && (adminLoggedIn ? <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} /> : <AdminLoginView onLogin={() => setAdminLoggedIn(true)} />)}
         {view === 'success' && <SuccessView setView={setView} />}
         {view === 'privacy' && <PrivacyView setView={setView} />}
         {view === 'terms' && <TermsView setView={setView} />}
@@ -1470,3 +1473,27 @@ const ReturnView = ({ setView }) => (
     If your return is approved, we will initiate a refund to your credit card (or original method of payment). You will receive the credit within a certain amount of days, depending on your card issuer's policies.
   `} />
 );
+
+const AdminLoginView = ({ onLogin }) => {
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('/api/admin/login', { user, pass });
+      onLogin();
+    } catch { alert('Invalid Credentials'); }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F4E6C5] p-6 animate-in zoom-in">
+      <form onSubmit={handleSubmit} className="bg-white p-12 rounded-[3rem] shadow-2xl max-w-sm w-full space-y-6 border border-[#DA3A36]/10">
+        <h2 className="text-3xl font-serif italic text-[#DA3A36] text-center mb-4">Admin Access</h2>
+        <input className="w-full p-4 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] text-center tracking-widest uppercase font-bold outline-none focus:bg-white transition" placeholder="XXX" maxLength={3} value={user} onChange={e => setUser(e.target.value.toUpperCase())} autoFocus />
+        <input className="w-full p-4 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] text-center tracking-widest outline-none focus:bg-white transition" type="password" placeholder="Key" value={pass} onChange={e => setPass(e.target.value)} />
+        <button className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest hover:scale-105 transition shadow-lg border-2 border-[#F6D55F]">Unlock</button>
+      </form>
+    </div>
+  );
+};
