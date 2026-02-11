@@ -1082,298 +1082,295 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
             ))}
           </div>
         </div>
-      )}        </div>
-  )
-}
+      )}
 
-{
-  tab === 'orders' && (
-    <div className="space-y-8">
-      {/* Report Download Section */}
-      <div className="bg-white border border-[#DA3A36]/10 rounded-[2rem] p-8 shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <h3 className="font-serif text-2xl text-[#DA3A36] italic mb-2">Download Orders Report</h3>
-            <p className="text-sm opacity-60">Generate comprehensive sales reports for different time periods</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => downloadOrdersReport('weekly')}
-              className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
-            >
-              <Download size={16} />
-              Weekly
-            </button>
-            <button
-              onClick={() => downloadOrdersReport('monthly')}
-              className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
-            >
-              <Download size={16} />
-              Monthly
-            </button>
-            <button
-              onClick={() => downloadOrdersReport('yearly')}
-              className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
-            >
-              <Download size={16} />
-              Yearly
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Orders List */}
-      <div className="grid gap-8">
-        {orders.map(order => (
-          <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
-            <div className="flex justify-between items-start">
-              <div className="space-y-4">
-                <h3 className="font-serif text-3xl text-[#DA3A36] italic">{order.customer?.name}</h3>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-1">
-                    <div className="font-bold uppercase text-[10px] opacity-40">Contact Details</div>
-                    <div className="opacity-70">{order.customer?.phone}</div>
-                    <div className="opacity-70">{order.customer?.email || 'No Email'}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-bold uppercase text-[10px] opacity-40">Shipping Address</div>
-                    <div className="opacity-70 leading-relaxed max-w-xs">{order.customer?.address}</div>
-                  </div>
-                </div>
+      {tab === 'orders' && (
+        <div className="space-y-8">
+          {/* Report Download Section */}
+          <div className="bg-white border border-[#DA3A36]/10 rounded-[2rem] p-8 shadow-xl">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h3 className="font-serif text-2xl text-[#DA3A36] italic mb-2">Download Orders Report</h3>
+                <p className="text-sm opacity-60">Generate comprehensive sales reports for different time periods</p>
               </div>
-              <div className="flex flex-col gap-3">
-                <select
-                  onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                  value={order.status}
-                  className="p-3 bg-[#F4E6C5]/30 rounded-xl text-xs font-bold border-none outline-none"
+              <div className="flex gap-3">
+                <button
+                  onClick={() => downloadOrdersReport('weekly')}
+                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
                 >
-                  <option>Pending</option><option>Shipped</option><option>Delivered</option>
-                </select>
-                <div className="flex gap-2 justify-end">
-                  <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
-                  <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
-                </div>
+                  <Download size={16} />
+                  Weekly
+                </button>
+                <button
+                  onClick={() => downloadOrdersReport('monthly')}
+                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+                >
+                  <Download size={16} />
+                  Monthly
+                </button>
+                <button
+                  onClick={() => downloadOrdersReport('yearly')}
+                  className="flex items-center gap-2 bg-[#DA3A36]/10 text-[#DA3A36] px-6 py-3 rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-md text-xs font-bold uppercase"
+                >
+                  <Download size={16} />
+                  Yearly
+                </button>
               </div>
             </div>
+          </div>
 
-            <div className="border-t border-[#DA3A36]/5 pt-6">
-              <div className="font-bold uppercase text-[10px] opacity-40 mb-4">Ordered Items</div>
-              <div className="space-y-3">
-                {(order.items || []).map((it, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm">
-                    <div className="flex gap-3 items-center">
-                      <div className="w-8 h-8 bg-[#DA3A36]/5 rounded-lg flex items-center justify-center font-bold text-[#DA3A36] text-[10px]">{it.qty}x</div>
-                      <span className="font-serif italic">{it.name}</span>
+          {/* Orders List */}
+          <div className="grid gap-8">
+            {orders.map(order => (
+              <div key={order.id} className="bg-white border border-[#FED3C7] rounded-[2.5rem] p-10 shadow-sm space-y-8 relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-4">
+                    <h3 className="font-serif text-3xl text-[#DA3A36] italic">{order.customer?.name}</h3>
+                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <div className="font-bold uppercase text-[10px] opacity-40">Contact Details</div>
+                        <div className="opacity-70">{order.customer?.phone}</div>
+                        <div className="opacity-70">{order.customer?.email || 'No Email'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="font-bold uppercase text-[10px] opacity-40">Shipping Address</div>
+                        <div className="opacity-70 leading-relaxed max-w-xs">{order.customer?.address}</div>
+                      </div>
                     </div>
-                    <span className="opacity-60">₹{it.price * it.qty}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-6 border-t border-[#DA3A36]/5">
-              <div className="text-[10px] uppercase font-bold opacity-30">Order Total</div>
-              <div className="text-3xl font-serif italic text-[#DA3A36]">₹{order.total}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-{
-  tab === 'media' && (
-    <div className="grid md:grid-cols-2 gap-12">
-      {['heroImages', 'momentImages', 'galleryVideos'].map(k => (
-        <div key={k} className="bg-white p-10 rounded-[3rem] border border-[#DA3A36]/10 shadow-xl space-y-8">
-          <div className="flex justify-between items-center text-xs font-bold uppercase text-[#DA3A36]">
-            <span>{k}</span>
-            <div className="flex gap-2">
-              {uploading === k ? (
-                <div className="flex items-center gap-2 text-[#DA3A36] animate-pulse">
-                  <Zap size={18} className="animate-spin" /> Uploading...
+                  <div className="flex flex-col gap-3">
+                    <select
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                      value={order.status}
+                      className="p-3 bg-[#F4E6C5]/30 rounded-xl text-xs font-bold border-none outline-none"
+                    >
+                      <option>Pending</option><option>Shipped</option><option>Delivered</option>
+                    </select>
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
+                      <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <button onClick={() => addMediaUrl(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Add URL"><Plus size={18} /></button>
-                  <button onClick={() => uploadMedia(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Upload File"><Upload size={18} /></button>
-                </>
-              )}
-            </div>
+
+                <div className="border-t border-[#DA3A36]/5 pt-6">
+                  <div className="font-bold uppercase text-[10px] opacity-40 mb-4">Ordered Items</div>
+                  <div className="space-y-3">
+                    {(order.items || []).map((it, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-sm">
+                        <div className="flex gap-3 items-center">
+                          <div className="w-8 h-8 bg-[#DA3A36]/5 rounded-lg flex items-center justify-center font-bold text-[#DA3A36] text-[10px]">{it.qty}x</div>
+                          <span className="font-serif italic">{it.name}</span>
+                        </div>
+                        <span className="opacity-60">₹{it.price * it.qty}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-6 border-t border-[#DA3A36]/5">
+                  <div className="text-[10px] uppercase font-bold opacity-30">Order Total</div>
+                  <div className="text-3xl font-serif italic text-[#DA3A36]">₹{order.total}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          {(mForm[k] || []).map((u, i) => <div key={i} className="flex justify-between items-center p-2"><span className="truncate w-64">{u}</span><button onClick={() => rmMedia(k, i)}><Trash2 /></button></div>)}
-          <button onClick={() => saveConfig('media', mForm)} className="bg-[#DA3A36] text-white px-4 py-2 rounded-xl">Save</button>
         </div>
-      ))}
-    </div>
-  )
-}
+      )
+      }
 
-{
-  tab === 'shipping' && (
-    <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl max-w-xl mx-auto space-y-10 text-center">
-      <h3 className="font-serif text-3xl text-[#DA3A36] italic">Delivery Logistics</h3>
-      <div className="space-y-8 text-left">
-        <div>
-          <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Shipping Fee (₹)</label>
-          <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.fee} onChange={e => setDForm({ ...dForm, fee: parseInt(e.target.value) || 0 })} />
-        </div>
-        <div>
-          <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Free Threshold (₹)</label>
-          <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.threshold} onChange={e => setDForm({ ...dForm, threshold: parseInt(e.target.value) || 0 })} />
-        </div>
-        <div>
-          <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Delivery Note (Broadcasted at Checkout)</label>
-          <textarea
-            className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7] text-xs leading-relaxed"
-            placeholder="e.g. Buy above ₹500 get Free Delivery"
-            rows={3}
-            value={dForm.note || ''}
-            onChange={e => setDForm({ ...dForm, note: e.target.value })}
-          ></textarea>
-        </div>
-        <button onClick={() => saveConfig('delivery', dForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Sync Shipping Rules</button>
-      </div>
-    </div>
-  )
-}
-
-{
-  tab === 'storefront' && (
-    <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-8 max-w-2xl mx-auto">
-      <h3 className="font-serif text-3xl text-[#DA3A36] italic">Marquee Broadcast</h3>
-      <textarea className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" rows={4} value={nForm.text} onChange={e => setNForm({ ...nForm, text: e.target.value })} />
-      <input type="number" className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" value={nForm.speed} onChange={e => setNForm({ ...nForm, speed: parseInt(e.target.value) })} />
-      <button onClick={() => saveConfig('flashnews', nForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-widest shadow-xl border-2 border-[#F6D55F]">Apply Broadcast Update</button>
-    </div>
-  )
-}
-
-{
-  tab === 'faqs' && (
-    <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-10 max-w-3xl mx-auto">
-      <div className="flex justify-between items-center font-serif text-3xl text-[#DA3A36] italic">Knowledge Base <button onClick={() => setFaqForm([...fForm, { question: '', answer: '' }])} className="p-4 bg-[#DA3A36] text-white rounded-full"><Plus size={24} /></button></div>
-      <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
-        {fForm.map((f, i) => (
-          <div key={i} className="p-8 bg-[#F4E6C5]/20 rounded-[2rem] border border-[#FED3C7] space-y-4 relative">
-            <button onClick={() => setFaqForm(fForm.filter((_, idx) => idx !== i))} className="absolute top-6 right-6 text-red-400"><Trash2 size={18} /></button>
-            <input className="w-full bg-white p-4 rounded-xl text-sm font-bold shadow-inner" placeholder="Question" value={f.question} onChange={e => { const n = [...fForm]; n[i].question = e.target.value; setFaqForm(n); }} />
-            <textarea className="w-full bg-white p-4 rounded-xl text-xs leading-relaxed" placeholder="Answer" rows={3} value={f.answer} onChange={e => { const n = [...fForm]; n[i].answer = e.target.value; setFaqForm(n); }} />
+      {
+        tab === 'media' && (
+          <div className="grid md:grid-cols-2 gap-12">
+            {['heroImages', 'momentImages', 'galleryVideos'].map(k => (
+              <div key={k} className="bg-white p-10 rounded-[3rem] border border-[#DA3A36]/10 shadow-xl space-y-8">
+                <div className="flex justify-between items-center text-xs font-bold uppercase text-[#DA3A36]">
+                  <span>{k}</span>
+                  <div className="flex gap-2">
+                    {uploading === k ? (
+                      <div className="flex items-center gap-2 text-[#DA3A36] animate-pulse">
+                        <Zap size={18} className="animate-spin" /> Uploading...
+                      </div>
+                    ) : (
+                      <>
+                        <button onClick={() => addMediaUrl(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Add URL"><Plus size={18} /></button>
+                        <button onClick={() => uploadMedia(k)} className="p-2 bg-[#DA3A36] text-white rounded-full" title="Upload File"><Upload size={18} /></button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {(mForm[k] || []).map((u, i) => <div key={i} className="flex justify-between items-center p-2"><span className="truncate w-64">{u}</span><button onClick={() => rmMedia(k, i)}><Trash2 /></button></div>)}
+                <button onClick={() => saveConfig('media', mForm)} className="bg-[#DA3A36] text-white px-4 py-2 rounded-xl">Save</button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <button onClick={() => saveConfig('faqs', { items: fForm })} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-2xl border-2 border-[#F6D55F]">Deploy FAQ Update</button>
-    </div>
-  )
-}
+        )
+      }
 
-{
-  adding && (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
-      <form onSubmit={saveProduct} className="bg-[#F4E6C5] p-10 rounded-[3rem] w-full max-w-lg space-y-6 shadow-2xl relative my-10 border border-white animate-in zoom-in duration-300">
-        <h3 className="text-3xl font-serif text-[#DA3A36] italic">{editingId ? 'Edit Indulgence' : 'New Indulgence'}</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Product Name</label>
-            <input className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Category</label>
-              <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
-                <option value="Chocolates">Chocolates</option>
-                <option value="Gifts">Gifts & Extras</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Status</label>
-              <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, active: e.target.value === 'true' })} value={form.active}>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
+      {
+        tab === 'shipping' && (
+          <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl max-w-xl mx-auto space-y-10 text-center">
+            <h3 className="font-serif text-3xl text-[#DA3A36] italic">Delivery Logistics</h3>
+            <div className="space-y-8 text-left">
+              <div>
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Shipping Fee (₹)</label>
+                <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.fee} onChange={e => setDForm({ ...dForm, fee: parseInt(e.target.value) || 0 })} />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Free Threshold (₹)</label>
+                <input type="number" className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7]" value={dForm.threshold} onChange={e => setDForm({ ...dForm, threshold: parseInt(e.target.value) || 0 })} />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Delivery Note (Broadcasted at Checkout)</label>
+                <textarea
+                  className="w-full p-6 rounded-[1.5rem] bg-[#F4E6C5]/20 border border-[#FED3C7] text-xs leading-relaxed"
+                  placeholder="e.g. Buy above ₹500 get Free Delivery"
+                  rows={3}
+                  value={dForm.note || ''}
+                  onChange={e => setDForm({ ...dForm, note: e.target.value })}
+                ></textarea>
+              </div>
+              <button onClick={() => saveConfig('delivery', dForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Sync Shipping Rules</button>
             </div>
           </div>
+        )
+      }
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Price (₹)</label>
-              <input type="number" className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Price" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Regular Price (₹)</label>
-              <input type="number" className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Regular" value={form.regularPrice} onChange={e => setForm({ ...form, regularPrice: e.target.value })} />
-            </div>
+      {
+        tab === 'storefront' && (
+          <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-8 max-w-2xl mx-auto">
+            <h3 className="font-serif text-3xl text-[#DA3A36] italic">Marquee Broadcast</h3>
+            <textarea className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" rows={4} value={nForm.text} onChange={e => setNForm({ ...nForm, text: e.target.value })} />
+            <input type="number" className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm" value={nForm.speed} onChange={e => setNForm({ ...nForm, speed: parseInt(e.target.value) })} />
+            <button onClick={() => saveConfig('flashnews', nForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase text-[10px] tracking-widest shadow-xl border-2 border-[#F6D55F]">Apply Broadcast Update</button>
           </div>
+        )
+      }
 
-          <div>
-            <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Description</label>
-            <textarea className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" rows={3} placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-          </div>
-
-          <div>
-            <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Product Images (Max 3)</label>
-            <div className="space-y-3">
-              {(form.images && form.images.length > 0 ? form.images : ['']).map((img, idx) => (
-                <div key={idx} className="flex gap-2 items-center animate-in slide-in-from-left-4 fade-in">
-                  <span className="text-xs font-bold opacity-30 w-4">{idx + 1}</span>
-                  <input
-                    className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none"
-                    placeholder="Image URL"
-                    value={img}
-                    onChange={e => {
-                      const newImages = [...(form.images || [''])];
-                      newImages[idx] = e.target.value;
-                      setForm({ ...form, images: newImages });
-                    }}
-                  />
-                  <button type="button" onClick={() => {
-                    const input = document.createElement('input'); input.type = 'file';
-                    input.onchange = async e => {
-                      if (e.target.files[0]) {
-                        setUploading('product' + idx);
-                        try {
-                          const u = await uploadFile(e.target.files[0]);
-                          const newImages = [...(form.images || [''])];
-                          newImages[idx] = u;
-                          setForm(prev => ({ ...prev, images: newImages }));
-                        } catch (err) { alert("Failed"); }
-                        finally { setUploading(null); }
-                      }
-                    };
-                    input.click();
-                  }} className="bg-[#DA3A36] text-white p-4 rounded-xl min-w-[50px] flex justify-center shadow-lg hover:scale-105 transition">
-                    {uploading === 'product' + idx ? <Zap size={20} className="animate-spin" /> : <Upload size={20} />}
-                  </button>
-                  {idx > 0 && (
-                    <button type="button" onClick={() => {
-                      const newImages = form.images.filter((_, i) => i !== idx);
-                      setForm({ ...form, images: newImages });
-                    }} className="text-red-400 p-2 hover:bg-red-50 rounded-lg"><Trash2 size={20} /></button>
-                  )}
+      {
+        tab === 'faqs' && (
+          <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-10 max-w-3xl mx-auto">
+            <div className="flex justify-between items-center font-serif text-3xl text-[#DA3A36] italic">Knowledge Base <button onClick={() => setFaqForm([...fForm, { question: '', answer: '' }])} className="p-4 bg-[#DA3A36] text-white rounded-full"><Plus size={24} /></button></div>
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
+              {fForm.map((f, i) => (
+                <div key={i} className="p-8 bg-[#F4E6C5]/20 rounded-[2rem] border border-[#FED3C7] space-y-4 relative">
+                  <button onClick={() => setFaqForm(fForm.filter((_, idx) => idx !== i))} className="absolute top-6 right-6 text-red-400"><Trash2 size={18} /></button>
+                  <input className="w-full bg-white p-4 rounded-xl text-sm font-bold shadow-inner" placeholder="Question" value={f.question} onChange={e => { const n = [...fForm]; n[i].question = e.target.value; setFaqForm(n); }} />
+                  <textarea className="w-full bg-white p-4 rounded-xl text-xs leading-relaxed" placeholder="Answer" rows={3} value={f.answer} onChange={e => { const n = [...fForm]; n[i].answer = e.target.value; setFaqForm(n); }} />
                 </div>
               ))}
-              {(form.images?.length || 0) < 3 && (
-                <button type="button" onClick={() => setForm({ ...form, images: [...(form.images || ['']), ''] })} className="text-xs font-bold text-[#DA3A36] uppercase tracking-widest flex items-center gap-2 pl-6 hover:opacity-100 opacity-60 transition">
-                  <Plus size={14} /> Add Another Image
-                </button>
-              )}
             </div>
+            <button onClick={() => saveConfig('faqs', { items: fForm })} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-2xl border-2 border-[#F6D55F]">Deploy FAQ Update</button>
           </div>
-        </div>
+        )
+      }
 
-        <div className="pt-4">
-          <button type="submit" className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest shadow-2xl hover:bg-[#E97D78] transition active:scale-95 border-2 border-[#F6D55F]">
-            {editingId ? 'Update Indulgence' : 'Publish to Store'}
-          </button>
-        </div>
+      {
+        adding && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6 overflow-y-auto">
+            <form onSubmit={saveProduct} className="bg-[#F4E6C5] p-10 rounded-[3rem] w-full max-w-lg space-y-6 shadow-2xl relative my-10 border border-white animate-in zoom-in duration-300">
+              <h3 className="text-3xl font-serif text-[#DA3A36] italic">{editingId ? 'Edit Indulgence' : 'New Indulgence'}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Product Name</label>
+                  <input className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                </div>
 
-        <button type="button" onClick={() => setAdding(false)} className="absolute top-6 right-6 text-red-400 p-2 hover:bg-white rounded-full transition"><Trash2 size={24} /></button>
-      </form>
-    </div>
-  )
-}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Category</label>
+                    <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
+                      <option value="Chocolates">Chocolates</option>
+                      <option value="Gifts">Gifts & Extras</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Status</label>
+                    <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, active: e.target.value === 'true' })} value={form.active}>
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Price (₹)</label>
+                    <input type="number" className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Price" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Regular Price (₹)</label>
+                    <input type="number" className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Regular" value={form.regularPrice} onChange={e => setForm({ ...form, regularPrice: e.target.value })} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Description</label>
+                  <textarea className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" rows={3} placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Product Images (Max 3)</label>
+                  <div className="space-y-3">
+                    {(form.images && form.images.length > 0 ? form.images : ['']).map((img, idx) => (
+                      <div key={idx} className="flex gap-2 items-center animate-in slide-in-from-left-4 fade-in">
+                        <span className="text-xs font-bold opacity-30 w-4">{idx + 1}</span>
+                        <input
+                          className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none"
+                          placeholder="Image URL"
+                          value={img}
+                          onChange={e => {
+                            const newImages = [...(form.images || [''])];
+                            newImages[idx] = e.target.value;
+                            setForm({ ...form, images: newImages });
+                          }}
+                        />
+                        <button type="button" onClick={() => {
+                          const input = document.createElement('input'); input.type = 'file';
+                          input.onchange = async e => {
+                            if (e.target.files[0]) {
+                              setUploading('product' + idx);
+                              try {
+                                const u = await uploadFile(e.target.files[0]);
+                                const newImages = [...(form.images || [''])];
+                                newImages[idx] = u;
+                                setForm(prev => ({ ...prev, images: newImages }));
+                              } catch (err) { alert("Failed"); }
+                              finally { setUploading(null); }
+                            }
+                          };
+                          input.click();
+                        }} className="bg-[#DA3A36] text-white p-4 rounded-xl min-w-[50px] flex justify-center shadow-lg hover:scale-105 transition">
+                          {uploading === 'product' + idx ? <Zap size={20} className="animate-spin" /> : <Upload size={20} />}
+                        </button>
+                        {idx > 0 && (
+                          <button type="button" onClick={() => {
+                            const newImages = form.images.filter((_, i) => i !== idx);
+                            setForm({ ...form, images: newImages });
+                          }} className="text-red-400 p-2 hover:bg-red-50 rounded-lg"><Trash2 size={20} /></button>
+                        )}
+                      </div>
+                    ))}
+                    {(form.images?.length || 0) < 3 && (
+                      <button type="button" onClick={() => setForm({ ...form, images: [...(form.images || ['']), ''] })} className="text-xs font-bold text-[#DA3A36] uppercase tracking-widest flex items-center gap-2 pl-6 hover:opacity-100 opacity-60 transition">
+                        <Plus size={14} /> Add Another Image
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button type="submit" className="w-full bg-[#DA3A36] text-white py-5 rounded-2xl font-bold uppercase tracking-widest shadow-2xl hover:bg-[#E97D78] transition active:scale-95 border-2 border-[#F6D55F]">
+                  {editingId ? 'Update Indulgence' : 'Publish to Store'}
+                </button>
+              </div>
+
+              <button type="button" onClick={() => setAdding(false)} className="absolute top-6 right-6 text-red-400 p-2 hover:bg-white rounded-full transition"><Trash2 size={24} /></button>
+            </form>
+          </div>
+        )
+      }
     </div >
   );
 }
