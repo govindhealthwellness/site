@@ -502,9 +502,10 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
 
       <section className="px-6 max-w-5xl mx-auto pb-20 text-center opacity-50 space-y-4 animate-in fade-in slide-in-from-bottom-5">
         <div className="w-12 h-px bg-[#DA3A36]/30 mx-auto"></div>
-        <p className="text-[10px] leading-relaxed uppercase tracking-widest font-bold text-[#4A0404]">
-          ⚠ Disclaimer: This product is not intended to diagnose, treat, cure, or prevent any disease. The statements regarding the ingredients are based on clinical studies referenced above. Individual results may vary. Consult your physician if you are pregnant, nursing, or have a medical condition before consuming this product. Keep out of reach of children.
-        </p>
+        <div className="text-[10px] leading-relaxed text-[#4A0404]">
+          <strong className="block mb-2 text-xs uppercase tracking-widest font-black">⚠ Disclaimer</strong>
+          <span className="opacity-70 font-medium">This product is not intended to diagnose, treat, cure, or prevent any disease. The statements regarding the ingredients are based on clinical studies referenced above. Individual results may vary. Consult your physician if you are pregnant, nursing, or have a medical condition before consuming this product. Keep out of reach of children.</span>
+        </div>
       </section>
     </div>
   );
