@@ -168,29 +168,7 @@ export default function App() {
     }
   };
 
-  if (showAgeGate) {
-    return (
-      <div className="fixed inset-0 z-[99999] bg-[#4A0404] flex flex-col items-center justify-center text-center p-6 space-y-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-        <div className="bg-[#F4E6C5] p-12 rounded-[3rem] shadow-2xl max-w-2xl w-full border-4 border-[#DA3A36] space-y-8 animate-in zoom-in duration-500">
-          <img src="/heart-flame.png" className="w-32 h-32 mx-auto animate-pulse" alt="LuvBees" />
-          <h1 className="text-5xl md:text-6xl font-serif italic text-[#DA3A36]">Age Verification</h1>
-          <p className="text-[#4A0404] text-xl font-medium leading-relaxed">
-            This website promotes products of an intimate nature.<br />
-            Are you 18 years of age or older?
-          </p>
-          <div className="flex flex-col md:flex-row gap-6 justify-center pt-4">
-            <button onClick={() => handleAgeVerify(true)} className="bg-[#DA3A36] text-white px-12 py-5 rounded-full font-bold uppercase tracking-widest text-lg hover:scale-105 transition shadow-xl border-2 border-[#F6D55F]">
-              Yes, I am 18+
-            </button>
-            <button onClick={() => handleAgeVerify(false)} className="bg-white text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase tracking-widest text-lg hover:scale-105 transition shadow-xl border-2 border-[#DA3A36]">
-              No, Exit
-            </button>
-          </div>
-          <p className="text-xs opacity-50 uppercase tracking-widest">By entering, you agree to our terms of service.</p>
-        </div>
-      </div>
-    );
-  }
+
 
   // Dynamic Configs
   const [flashnews, setFlashnews] = useState({ text: "Flashnews • India's viral chocolate • Free Shipping • Limited Stock", speed: 15 });
@@ -254,6 +232,30 @@ export default function App() {
   const clearCart = () => setCart([]);
 
   const reloadData = () => setRefresh(prev => prev + 1);
+
+  if (showAgeGate) {
+    return (
+      <div className="fixed inset-0 z-[99999] bg-[#4A0404] flex flex-col items-center justify-center text-center p-6 space-y-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+        <div className="bg-[#F4E6C5] p-12 rounded-[3rem] shadow-2xl max-w-2xl w-full border-4 border-[#DA3A36] space-y-8 animate-in zoom-in duration-500">
+          <img src="/heart-flame.png" className="w-32 h-32 mx-auto animate-pulse" alt="LuvBees" />
+          <h1 className="text-5xl md:text-6xl font-serif italic text-[#DA3A36]">Age Verification</h1>
+          <p className="text-[#4A0404] text-xl font-medium leading-relaxed">
+            This website promotes products of an intimate nature.<br />
+            Are you 18 years of age or older?
+          </p>
+          <div className="flex flex-col md:flex-row gap-6 justify-center pt-4">
+            <button onClick={() => handleAgeVerify(true)} className="bg-[#DA3A36] text-white px-12 py-5 rounded-full font-bold uppercase tracking-widest text-lg hover:scale-105 transition shadow-xl border-2 border-[#F6D55F]">
+              Yes, I am 18+
+            </button>
+            <button onClick={() => handleAgeVerify(false)} className="bg-white text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase tracking-widest text-lg hover:scale-105 transition shadow-xl border-2 border-[#DA3A36]">
+              No, Exit
+            </button>
+          </div>
+          <p className="text-xs opacity-50 uppercase tracking-widest">By entering, you agree to our terms of service.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) return <div className="h-screen w-full bg-[#F4E6C5] flex items-center justify-center"><Heart className="animate-pulse text-[#DA3A36]" size={48} /></div>;
 
