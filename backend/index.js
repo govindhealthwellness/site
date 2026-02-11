@@ -163,6 +163,10 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
+app.get('/admin', (req, res) => {
+    res.redirect('http://localhost:5173/admin');
+});
+
 // Admin Auth
 app.post('/api/admin/login', (req, res) => {
     const { user, pass } = req.body;
