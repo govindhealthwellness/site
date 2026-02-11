@@ -19,6 +19,10 @@
             "destination": "backend/index.js"
         },
         {
+            "source": "/admin",
+            "destination": "frontend/index.html"
+        },
+        {
             "source": "/(.*)",
             "destination": "frontend/$1"
         }
