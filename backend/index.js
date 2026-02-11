@@ -85,6 +85,20 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
+app.put('/api/products/:id', async (req, res) => {
+    try {
+        const { name, price, regularPrice, description, imageUrl, category, active } = req.body;
+        await dbQuery(
+            'UPDATE products SET name=?, price=?, regularPrice=?, description=?, imageUrl=?, category=?, active=? WHERE id=?',
+            [name, price, regularPrice, description, imageUrl, category, active, req.params.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[API] Error updating product:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.delete('/api/products/:id', async (req, res) => {
     try {
         await dbQuery('DELETE FROM products WHERE id = ?', [req.params.id]);
