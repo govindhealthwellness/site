@@ -266,6 +266,59 @@ app.post('/api/create-razorpay-order', async (req, res) => {
     }
 });
 
+// --- Promo Codes API ---
+
+// Init Table
+(async () => {
+    try {
+        await dbQuery(`
+            CREATE TABLE IF NOT EXISTS promocodes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(50) UNIQUE NOT NULL,
+                type ENUM('flat', 'percent') NOT NULL,
+                value DECIMAL(10,2) NOT NULL,
+                active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('[DB] Promocodes table verified');
+    } catch (e) { console.error('[DB] Failed to init promocodes table', e); }
+})();
+
+app.get('/api/promocodes', async (req, res) => {
+    try {
+        const [rows] = await dbQuery('SELECT * FROM promocodes ORDER BY created_at DESC');
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/promocodes', async (req, res) => {
+    const { code, type, value } = req.body;
+    try {
+        await dbQuery('INSERT INTO promocodes (code, type, value) VALUES (?, ?, ?)', [code.toUpperCase(), type, value]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/promocodes/:id', async (req, res) => {
+    try {
+        await dbQuery('DELETE FROM promocodes WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/verify-promo', async (req, res) => {
+    const { code } = req.body;
+    try {
+        const [rows] = await dbQuery('SELECT * FROM promocodes WHERE code = ? AND active = TRUE', [code.toUpperCase()]);
+        if (rows.length > 0) {
+            res.json({ valid: true, type: rows[0].type, value: rows[0].value, code: rows[0].code });
+        } else {
+            res.json({ valid: false });
+        }
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
     app.listen(PORT, () => {

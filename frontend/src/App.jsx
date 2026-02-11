@@ -4,7 +4,7 @@ import {
   CheckCircle, Settings, Image as ImageIcon, Package, Play,
   HelpCircle, Zap, Video, Instagram, ShieldCheck, Award, Truck,
   MapPin, Sparkles, AlignLeft, Phone, Coffee, Gift, ArrowLeft,
-  ClipboardList, Upload, Download, Volume2, VolumeX, Facebook, FileText
+  ClipboardList, Upload, Download, Volume2, VolumeX, Facebook, FileText, Percent
 } from 'lucide-react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
@@ -345,7 +345,7 @@ export default function App() {
       </main>
 
       <footer className="bg-[#FED3C7] border-t border-[#DA3A36]/10 py-8 px-6 text-center">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-4">
           <div className="flex justify-center gap-2 items-center text-[#DA3A36]">
             <Heart size={20} fill="currentColor" />
             <h2 className="text-3xl font-serif uppercase tracking-widest">LuvBees</h2>
@@ -546,7 +546,7 @@ function ShopView({ products, addToCart, setProduct, filter }) {
       <div className="text-center space-y-4">
         <h1 className="text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : 'Gift Boutique'}</h1>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filtered.map(p => (
           <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col h-full hover:shadow-2xl transition-all group border border-[#FED3C7]/20">
             <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
@@ -631,10 +631,27 @@ function ProductDetailView({ product, addToCart, setView }) {
 function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, remove, clearCart }) {
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
   const [isOrdering, setIsOrdering] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [discount, setDiscount] = useState(null);
 
   useEffect(() => {
     loadScript('https://checkout.razorpay.com/v1/checkout.js');
   }, []);
+
+  const finalTotal = discount ? (discount.type === 'flat' ? Math.max(0, grandTotal - discount.value) : Math.max(0, grandTotal - (grandTotal * discount.value / 100))) : grandTotal;
+
+  const checkPromo = async () => {
+    if (!promoCode) return;
+    try {
+      const res = await axios.post('/api/verify-promo', { code: promoCode });
+      if (res.data.valid) {
+        setDiscount(res.data);
+      } else {
+        alert("Invalid Promo Code");
+        setDiscount(null);
+      }
+    } catch { alert("Error checking promo"); }
+  };
 
   const handleCheckout = async () => {
     if (!formData.name || !formData.phone || !formData.email || !formData.address) return;
@@ -645,12 +662,13 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
         items: cart,
         subtotal,
         shipCost,
-        total: grandTotal,
+        discount: discount ? { code: discount.code, amount: grandTotal - finalTotal } : null,
+        total: finalTotal,
         status: 'Pending'
       };
 
       // 1. Create Razorpay Order on Backend
-      const rzOrderRes = await axios.post('/api/create-razorpay-order', { amount: grandTotal });
+      const rzOrderRes = await axios.post('/api/create-razorpay-order', { amount: finalTotal });
       const rzOrder = rzOrderRes.data;
 
       const options = {
@@ -727,15 +745,33 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
           </div>
 
           <div className="space-y-4 pt-8 border-t border-[#DA3A36]/10">
+            {/* Promo Code Input */}
+            <div className="flex gap-2">
+              <input
+                placeholder="PROMO CODE"
+                className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none uppercase tracking-widest text-[#DA3A36] font-bold"
+                value={promoCode}
+                onChange={e => setPromoCode(e.target.value.toUpperCase())}
+              />
+              <button onClick={checkPromo} className="bg-[#DA3A36] text-white px-6 rounded-2xl font-bold uppercase text-[10px] hover:scale-105 transition shadow-lg shrink-0">Apply</button>
+            </div>
+            {discount && <div className="text-green-600 text-xs font-bold uppercase tracking-widest text-center">Code Applied: {discount.type === 'flat' ? `₹${discount.value} OFF` : `${discount.value}% OFF`}</div>}
+
             <div className="flex justify-between text-xs font-bold uppercase opacity-40"><span>Subtotal</span><span>₹{subtotal}</span></div>
             <div className="flex justify-between items-center text-xs font-bold uppercase">
               <span className="opacity-40">Delivery {subtotal < delivery.threshold && <span className="text-[8px] text-[#DA3A36] italic">(Add ₹{delivery.threshold - subtotal} for free)</span>}</span>
               <span className={shipCost === 0 ? "text-green-600 font-bold" : "opacity-40"}>{shipCost === 0 ? 'FREE' : `₹${shipCost}`}</span>
             </div>
+            {discount && (
+              <div className="flex justify-between text-xs font-bold uppercase text-green-600">
+                <span>Discount</span>
+                <span>-₹{(grandTotal - finalTotal).toFixed(0)}</span>
+              </div>
+            )}
             <div className="text-4xl font-serif text-[#DA3A36] pt-6 flex justify-between italic items-end">
               <span>Total</span>
               <div className="text-right">
-                <span>₹{grandTotal}</span>
+                <span>₹{finalTotal.toFixed(0)}</span>
               </div>
             </div>
             {delivery.note && (
@@ -770,10 +806,12 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
   const [mForm, setMForm] = useState(media);
   const [fForm, setFaqForm] = useState(faqs);
   const [dForm, setDForm] = useState(delivery);
+  const [promos, setPromos] = useState([]);
 
   useEffect(() => {
     // Load orders
     axios.get('/api/orders').then(res => setOrders(res.data)).catch(console.error);
+    if (tab === 'promos') axios.get('/api/promocodes').then(res => setPromos(res.data)).catch(console.error);
     setNForm(flashnews); setMForm(media); setFaqForm(faqs); setDForm(delivery);
   }, [flashnews, media, faqs, delivery, tab]);
 
@@ -1086,6 +1124,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
         <div className="flex gap-3 border-b border-[#DA3A36]/10 pb-4 overflow-x-auto no-scrollbar scroll-smooth">
           {[
             { id: 'inventory', label: 'Inventory', icon: <Package size={14} /> },
+            { id: 'promos', label: 'Promo Codes', icon: <Percent size={14} /> },
             { id: 'orders', label: 'Orders', icon: <ClipboardList size={14} /> },
             { id: 'storefront', label: 'Marquee', icon: <Zap size={14} /> },
             { id: 'media', label: 'Media', icon: <ImageIcon size={14} /> },
@@ -1248,6 +1287,63 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
           </div>
         )
       }
+
+      {tab === 'promos' && (
+        <div className="space-y-10">
+          <div className="bg-white p-10 rounded-[3rem] border border-[#DA3A36]/10 shadow-xl space-y-8">
+            <h3 className="font-serif text-2xl text-[#DA3A36] italic">Add New Promo Code</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              const payload = {
+                code: formData.get('code'),
+                type: formData.get('type'),
+                value: parseFloat(formData.get('value'))
+              };
+              try {
+                await axios.post('/api/promocodes', payload);
+                const res = await axios.get('/api/promocodes'); setPromos(res.data);
+                e.target.reset();
+              } catch { alert("Failed to add promo"); }
+            }} className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1 space-y-2">
+                <label className="text-[10px] font-bold uppercase opacity-40 ml-2">Code</label>
+                <input name="code" required placeholder="Ex: SAVE10" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none uppercase font-bold text-[#DA3A36]" />
+              </div>
+              <div className="w-32 space-y-2">
+                <label className="text-[10px] font-bold uppercase opacity-40 ml-2">Type</label>
+                <select name="type" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none">
+                  <option value="percent">% Off</option>
+                  <option value="flat">Flat ₹</option>
+                </select>
+              </div>
+              <div className="w-32 space-y-2">
+                <label className="text-[10px] font-bold uppercase opacity-40 ml-2">Value</label>
+                <input name="value" type="number" required placeholder="0" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" />
+              </div>
+              <button className="bg-[#DA3A36] text-white px-8 py-4 rounded-2xl font-bold uppercase text-xs shadow-lg hover:scale-105 transition"><Plus size={18} /> Add</button>
+            </form>
+          </div>
+
+          <div className="grid gap-4">
+            {promos.map(p => (
+              <div key={p.id} className="bg-white p-6 rounded-[2rem] border border-[#DA3A36]/10 shadow-sm flex justify-between items-center group hover:shadow-md transition">
+                <div>
+                  <div className="font-bold text-xl text-[#DA3A36] tracking-widest">{p.code}</div>
+                  <div className="text-xs opacity-50 uppercase font-bold">{p.type === 'flat' ? `Flat ₹${p.value} OFF` : `${p.value}% OFF`}</div>
+                </div>
+                <button onClick={async () => {
+                  if (confirm("Delete promo code?")) {
+                    await axios.delete(`/api/promocodes/${p.id}`);
+                    const res = await axios.get('/api/promocodes'); setPromos(res.data);
+                  }
+                }} className="bg-red-50 text-red-500 p-3 rounded-full hover:bg-red-500 hover:text-white transition"><Trash2 size={18} /></button>
+              </div>
+            ))}
+            {promos.length === 0 && <div className="text-center opacity-30 italic py-10">No active promo codes</div>}
+          </div>
+        </div>
+      )}
 
       {
         tab === 'shipping' && (
