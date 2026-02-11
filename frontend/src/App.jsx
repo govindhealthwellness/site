@@ -337,6 +337,13 @@ export default function App() {
   );
 }
 
+const getImage = (p) => {
+  try {
+    const j = JSON.parse(p.imageUrl);
+    return Array.isArray(j) && j.length > 0 ? j[0] : p.imageUrl;
+  } catch { return p.imageUrl; }
+};
+
 const BadgeItem = ({ icon, label }) => {
   return (
     <div className="flex flex-col items-center gap-2 md:gap-6 group">
@@ -402,7 +409,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           {products.filter(p => p.active && p.category === 'Chocolates').slice(0, 3).map(p => (
             <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
+                <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
               <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
               <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
@@ -428,7 +435,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           {products.filter(p => p.active && p.category === 'Gifts').slice(0, 3).map(p => (
             <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-                <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
+                <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
               <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
               <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
@@ -508,7 +515,7 @@ function ShopView({ products, addToCart, setProduct, filter }) {
         {filtered.map(p => (
           <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col h-full hover:shadow-2xl transition-all group border border-[#FED3C7]/20">
             <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-              <img src={p.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+              <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
             </div>
             <h3 className="font-serif text-xl text-[#4A0404] cursor-pointer" onClick={() => setProduct(p)}>{p.name}</h3>
             <p className="text-[10px] opacity-50 italic my-3 line-clamp-3 leading-relaxed">{p.description}</p>
@@ -1068,7 +1075,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
             {products.map(p => (
               <div key={p.id} className="bg-white border border-[#FED3C7] rounded-[2rem] p-6 flex items-center justify-between shadow-sm hover:shadow-md transition">
                 <div className="flex items-center gap-6">
-                  <img src={p.imageUrl} className="w-20 h-20 object-cover rounded-2xl shadow-inner border" alt="" />
+                  <img src={getImage(p)} className="w-20 h-20 object-cover rounded-2xl shadow-inner border" alt="" />
                   <div className="space-y-1">
                     <div className="font-serif text-2xl italic text-[#4A0404]">{p.name} <span className="text-[10px] bg-[#DA3A36]/10 text-[#DA3A36] px-3 py-1 rounded-full ml-2">{p.category}</span></div>
                     <div className="text-xs opacity-60">₹{p.price}</div>
