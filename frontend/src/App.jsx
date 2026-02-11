@@ -61,16 +61,44 @@ const HeartCursor = () => {
 const CustomSlider = ({ items, type = 'image', aspect = 'video' }) => {
   const [idx, setIdx] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
   const next = () => setIdx((prev) => (prev + 1) % (items?.length || 1));
   const prev = () => setIdx((prev) => (prev - 1 + (items?.length || 1)) % (items?.length || 1));
+
+  // Auto Slide (only for images)
+  useEffect(() => {
+    if (type === 'video' || !items || items.length <= 1) return;
+    const interval = setInterval(next, 4000);
+    return () => clearInterval(interval);
+  }, [idx, items, type]);
+
+  // Swipe Handlers
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    if (isLeftSwipe) next();
+    if (isRightSwipe) prev();
+  };
 
   const aspectClass = aspect === 'video' ? 'aspect-video md:aspect-[21/9]' : 'aspect-[3/4]';
 
   if (!items || items.length === 0) return <div className={`w-full ${aspectClass} bg-white/10 rounded-2xl flex items-center justify-center italic opacity-30 border border-dashed border-[#DA3A36]`}>No {type}s configured in Admin</div>;
 
   return (
-    <div className={`relative w-full ${aspectClass} overflow-hidden rounded-3xl border border-[#DA3A36]/10 group shadow-2xl bg-black`}>
-      <div className="absolute inset-0 flex transition-transform duration-500" style={{ transform: `translateX(-${idx * 100}%)` }}>
+    <div
+      className={`relative w-full ${aspectClass} overflow-hidden rounded-3xl border border-[#DA3A36]/10 group shadow-2xl bg-black`}
+      onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+    >
+      <div className="absolute inset-0 flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${idx * 100}%)` }}>
         {items.map((it, i) => {
           const instaMatch = it.includes('instagram.com') ? it.match(/(?:p|reel|reels)\/([a-zA-Z0-9_-]+)/) : null;
           return (
@@ -89,7 +117,6 @@ const CustomSlider = ({ items, type = 'image', aspect = 'video' }) => {
                   : (it.includes('instagram.com') ?
                     <div className="w-full h-full bg-black flex items-center justify-center relative overflow-hidden">
                       <div className="text-center space-y-4">
-                        <Play size={48} className="text-[#DA3A36] mx-auto animate-pulse" />
                         <div className="text-white/50 text-xs uppercase tracking-widest">Instagram Content</div>
                         <button onClick={() => window.open(it, '_blank')} className="bg-[#DA3A36] text-white px-6 py-2 rounded-full text-xs font-bold uppercase hover:scale-105 transition">View on Instagram</button>
                       </div>
@@ -97,7 +124,7 @@ const CustomSlider = ({ items, type = 'image', aspect = 'video' }) => {
                     :
                     <div className="relative w-full h-full">
                       <video src={it} className="w-full h-full object-contain" autoPlay loop muted={muted} playsInline />
-                      <button onClick={() => setMuted(!muted)} className="absolute bottom-6 right-6 p-3 bg-black/50 text-white rounded-full hover:bg-[#DA3A36] transition backdrop-blur-sm">
+                      <button onClick={() => setMuted(!muted)} className="absolute bottom-6 right-6 p-3 bg-black/50 text-white rounded-full hover:bg-[#DA3A36] transition backdrop-blur-sm z-20">
                         {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                       </button>
                     </div>
@@ -110,11 +137,11 @@ const CustomSlider = ({ items, type = 'image', aspect = 'video' }) => {
       </div>
       {items.length > 1 && (
         <>
-          <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-[#DA3A36] hover:text-white z-10"><ChevronLeft size={24} /></button>
-          <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-[#DA3A36] hover:text-white z-10"><ChevronRight size={24} /></button>
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          <button onClick={(e) => { e.stopPropagation(); prev(); }} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full md:opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-[#DA3A36] hover:text-white z-20"><ChevronLeft size={24} /></button>
+          <button onClick={(e) => { e.stopPropagation(); next(); }} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full md:opacity-0 group-hover:opacity-100 transition shadow-md hover:bg-[#DA3A36] hover:text-white z-20"><ChevronRight size={24} /></button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
             {items.map((_, i) => (
-              <div key={i} className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-[#DA3A36] w-6' : 'bg-[#DA3A36]/20'}`} />
+              <button key={i} onClick={() => setIdx(i)} className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-[#DA3A36] w-6' : 'bg-[#DA3A36]/50'}`} />
             ))}
           </div>
         </>
