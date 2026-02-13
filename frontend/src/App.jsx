@@ -455,8 +455,8 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Our Viral Vitality Chocolates</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
-          {products.filter(p => p.active && p.category === 'Chocolates').slice(0, 3).map(p => (
-            <div key={p.id} className="w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+          {products.filter(p => p.active && p.category === 'Chocolates').slice(0, 3).map((p, i) => (
+            <div key={p.id} className={`${i > 0 ? 'hidden md:flex' : 'flex'} w-full md:w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex-col group h-full border border-[#FED3C7]/30`}>
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
                 <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
@@ -481,8 +481,8 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
-          {products.filter(p => p.active && p.category === 'Gifts').slice(0, 3).map(p => (
-            <div key={p.id} className="w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+          {products.filter(p => p.active && p.category === 'Gifts').slice(0, 3).map((p, i) => (
+            <div key={p.id} className={`${i > 0 ? 'hidden md:flex' : 'flex'} w-full md:w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex-col group h-full border border-[#FED3C7]/30`}>
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
                 <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
@@ -507,8 +507,8 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Perfect Pairings</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
-          {products.filter(p => p.active && p.category === 'Combos').slice(0, 3).map(p => (
-            <div key={p.id} className="w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+          {products.filter(p => p.active && p.category === 'Combos').slice(0, 3).map((p, i) => (
+            <div key={p.id} className={`${i > 0 ? 'hidden md:flex' : 'flex'} w-full md:w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex-col group h-full border border-[#FED3C7]/30`}>
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
                 <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
