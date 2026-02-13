@@ -500,6 +500,32 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         </div>
         <div className="text-center pt-8"><button onClick={() => setView('gift-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore Gift Boutique</button></div>
       </section>
+
+      <section className="px-6 max-w-7xl mx-auto space-y-16">
+        <div className="text-center space-y-2">
+          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Combos Collection</h2>
+          <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Perfect Pairings</p>
+        </div>
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 px-0 md:px-0">
+          {products.filter(p => p.active && p.category === 'Combos').slice(0, 3).map(p => (
+            <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+              <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
+                <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
+              </div>
+              <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
+              <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
+              <div className="flex items-end gap-1 md:gap-3 mb-2 md:mb-8 mt-1 md:mt-0">
+                <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
+                {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
+              </div>
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-2 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-1 md:gap-2 group-hover:shadow-[#DA3A36]/20 text-[6px] md:text-sm">
+                <ShoppingBag size={10} className="md:w-[18px] md:h-[18px]" /> <span className="hidden md:inline">Buy Now</span><span className="md:hidden">Buy</span>
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="text-center pt-8"><button onClick={() => setView('combo-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore Combos</button></div>
+      </section>
       <section className="px-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-12 h-px bg-[#DA3A36]/30"></div>
