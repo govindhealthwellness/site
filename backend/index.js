@@ -269,6 +269,7 @@ app.post('/api/create-razorpay-order', async (req, res) => {
 // --- Promo Codes API ---
 
 // Init Table
+// Init Table
 (async () => {
     try {
         await dbQuery(`
@@ -278,9 +279,14 @@ app.post('/api/create-razorpay-order', async (req, res) => {
                 type ENUM('flat', 'percent') NOT NULL,
                 value DECIMAL(10,2) NOT NULL,
                 active BOOLEAN DEFAULT TRUE,
+                auto_apply BOOLEAN DEFAULT FALSE,
+                min_order_value DECIMAL(10,2) DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        // Ensure new columns exist for existing tables
+        try { await dbQuery("ALTER TABLE promocodes ADD COLUMN auto_apply BOOLEAN DEFAULT FALSE"); } catch (e) { }
+        try { await dbQuery("ALTER TABLE promocodes ADD COLUMN min_order_value DECIMAL(10,2) DEFAULT 0"); } catch (e) { }
         console.log('[DB] Promocodes table verified');
     } catch (e) { console.error('[DB] Failed to init promocodes table', e); }
 })();
@@ -293,9 +299,12 @@ app.get('/api/promocodes', async (req, res) => {
 });
 
 app.post('/api/promocodes', async (req, res) => {
-    const { code, type, value } = req.body;
+    const { code, type, value, auto_apply = false, min_order_value = 0 } = req.body;
     try {
-        await dbQuery('INSERT INTO promocodes (code, type, value) VALUES (?, ?, ?)', [code.toUpperCase(), type, value]);
+        await dbQuery(
+            'INSERT INTO promocodes (code, type, value, auto_apply, min_order_value) VALUES (?, ?, ?, ?, ?)',
+            [code.toUpperCase(), type, value, auto_apply, min_order_value]
+        );
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });

@@ -123,7 +123,10 @@ const CustomSlider = ({ items, type = 'image', aspect = 'video' }) => {
                     </div>
                     :
                     <div className="relative w-full h-full">
-                      <video src={it} className="w-full h-full object-contain" autoPlay loop muted={muted} playsInline />
+                      <video
+                        ref={el => { if (el) i === idx ? el.play().catch(() => { }) : el.pause(); }}
+                        src={it} className="w-full h-full object-contain" loop muted={muted} playsInline
+                      />
                       <button onClick={() => setMuted(!muted)} className="absolute bottom-6 right-6 p-3 bg-black/50 text-white rounded-full hover:bg-[#DA3A36] transition backdrop-blur-sm z-20">
                         {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                       </button>
@@ -328,6 +331,7 @@ export default function App() {
 
         <div className="hidden md:flex gap-8 text-[10px] uppercase font-bold tracking-widest opacity-60">
           <button onClick={() => setView('chocolate-shop')} className={`hover:text-[#DA3A36] ${view === 'chocolate-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Chocolates</button>
+          <button onClick={() => setView('combo-shop')} className={`hover:text-[#DA3A36] ${view === 'combo-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Combos</button>
           <button onClick={() => setView('gift-shop')} className={`hover:text-[#DA3A36] ${view === 'gift-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Gifts & Extras</button>
         </div>
 
@@ -343,6 +347,7 @@ export default function App() {
       <main>
         {view === 'home' && <HomeView products={products} setView={setView} addToCart={addToCart} media={media} faqs={faqs} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} />}
         {view === 'chocolate-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Chocolates" />}
+        {view === 'combo-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Combos" />}
         {view === 'gift-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Gifts" />}
         {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} />}
         {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} updateQty={updateQty} />}
@@ -421,8 +426,9 @@ const HeroSection = ({ media, setView }) => {
         <div className="flex justify-center"><img src="/heart-flame.png" className="w-32 h-32 object-contain animate-pulse drop-shadow-xl" alt="" /></div>
         <h1 className="text-6xl md:text-9xl font-serif italic text-[#DA3A36] leading-tight text-shadow">Feed the Flame, Naturally</h1>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolate Sanctuary</button>
-          <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gift Boutique</button>
+          <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolates</button>
+          <button onClick={() => setView('combo-shop')} className="bg-white text-[#DA3A36] px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Package size={14} /> Combos</button>
+          <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gifts</button>
         </div>
       </div>
     </section>
@@ -518,7 +524,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         </div>
       </section>
       <section className="px-6 max-w-4xl mx-auto py-12">
-        <h2 className="text-4xl font-serif italic text-[#4A0404] mb-12">Common Inquiries</h2>
+        <h2 className="text-4xl font-serif italic text-[#4A0404] mb-12">Common Enquiries</h2>
         <div className="space-y-1">{faqs.map((f, i) => <AccordionItem key={i} q={f.question} a={f.answer} />)}</div>
       </section>
       <section className="bg-[#DA3A36] text-[#F4E6C5] py-16 md:py-24 px-6 text-center relative overflow-hidden">
@@ -553,7 +559,7 @@ function ShopView({ products, addToCart, setProduct, filter }) {
   return (
     <div className="max-w-7xl mx-auto px-6 py-24 min-h-screen space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-500">
       <div className="text-center space-y-4">
-        <h1 className="text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : 'Gift Boutique'}</h1>
+        <h1 className="text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : (filter === 'Combos' ? 'Combos Collection' : 'Gift Boutique')}</h1>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filtered.map(p => (
@@ -642,10 +648,28 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
   const [isOrdering, setIsOrdering] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(null);
+  const [autoPromos, setAutoPromos] = useState([]);
 
   useEffect(() => {
     loadScript('https://checkout.razorpay.com/v1/checkout.js');
+    axios.get('/api/promocodes').then(res => setAutoPromos(res.data.filter(p => p.auto_apply))).catch(() => { });
   }, []);
+
+  useEffect(() => {
+    if (autoPromos.length === 0) return;
+    // Check for auto-apply
+    const best = autoPromos
+      .filter(p => grandTotal >= (p.min_order_value || 0))
+      .sort((a, b) => b.value - a.value)[0]; // Simple sort by face value (imperfect for mixed types)
+
+    // Apply if no manual code or if auto is better? 
+    // For now, if no discount applied, or if current discount is auto-applied and new best is different.
+    if (best && (!discount || (discount.auto_apply && discount.code !== best.code))) {
+      setDiscount(best);
+    } else if (discount && discount.auto_apply && (!best || grandTotal < (discount.min_order_value || 0))) {
+      setDiscount(null);
+    }
+  }, [grandTotal, autoPromos, discount]);
 
   const finalTotal = discount ? (discount.type === 'flat' ? Math.max(0, grandTotal - discount.value) : Math.max(0, grandTotal - (grandTotal * discount.value / 100))) : grandTotal;
 
@@ -681,7 +705,7 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
       const rzOrder = rzOrderRes.data;
 
       const options = {
-        key: "rzp_test_SCpWIopZe4wkSQ", // Test Key Configured
+        key: "rzp_live_SFgDEiZarmlLZD", // Live Key Configured
         amount: rzOrder.amount,
         currency: rzOrder.currency,
         name: "LuvBees",
@@ -1311,15 +1335,17 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
               const payload = {
                 code: formData.get('code'),
                 type: formData.get('type'),
-                value: parseFloat(formData.get('value'))
+                value: parseFloat(formData.get('value')),
+                auto_apply: formData.get('auto_apply') === 'on',
+                min_order_value: parseFloat(formData.get('min_order_value') || 0)
               };
               try {
                 await axios.post('/api/promocodes', payload);
                 const res = await axios.get('/api/promocodes'); setPromos(res.data);
                 e.target.reset();
               } catch { alert("Failed to add promo"); }
-            }} className="flex flex-col md:flex-row gap-4 items-end">
-              <div className="flex-1 space-y-2">
+            }} className="flex flex-col md:flex-row gap-4 items-end flex-wrap">
+              <div className="flex-1 space-y-2 min-w-[200px]">
                 <label className="text-[10px] font-bold uppercase opacity-40 ml-2">Code</label>
                 <input name="code" required placeholder="Ex: SAVE10" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none uppercase font-bold text-[#DA3A36]" />
               </div>
@@ -1333,6 +1359,14 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
               <div className="w-32 space-y-2">
                 <label className="text-[10px] font-bold uppercase opacity-40 ml-2">Value</label>
                 <input name="value" type="number" required placeholder="0" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" />
+              </div>
+              <div className="w-32 space-y-2">
+                <label className="text-[10px] font-bold uppercase opacity-40 ml-2">Min Order</label>
+                <input name="min_order_value" type="number" placeholder="0" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" />
+              </div>
+              <div className="flex items-center gap-2 pb-4">
+                <input type="checkbox" name="auto_apply" className="w-6 h-6 accent-[#DA3A36]" />
+                <label className="text-xs font-bold uppercase text-[#DA3A36]">Auto Apply</label>
               </div>
               <button className="bg-[#DA3A36] text-white px-8 py-4 rounded-2xl font-bold uppercase text-xs shadow-lg hover:scale-105 transition"><Plus size={18} /> Add</button>
             </form>
@@ -1432,6 +1466,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
                     <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Category</label>
                     <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
                       <option value="Chocolates">Chocolates</option>
+                      <option value="Combos">Combos</option>
                       <option value="Gifts">Gifts & Extras</option>
                     </select>
                   </div>
