@@ -454,9 +454,9 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Chocolate Sanctuary</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Our Viral Vitality Chocolates</p>
         </div>
-        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 px-0 md:px-0">
+        <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
           {products.filter(p => p.active && p.category === 'Chocolates').slice(0, 3).map(p => (
-            <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+            <div key={p.id} className="w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
                 <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
@@ -480,9 +480,9 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Gift Boutique</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
         </div>
-        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 px-0 md:px-0">
+        <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
           {products.filter(p => p.active && p.category === 'Gifts').slice(0, 3).map(p => (
-            <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+            <div key={p.id} className="w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
                 <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
@@ -506,9 +506,9 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Combos Collection</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Perfect Pairings</p>
         </div>
-        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 px-0 md:px-0">
+        <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
           {products.filter(p => p.active && p.category === 'Combos').slice(0, 3).map(p => (
-            <div key={p.id} className="bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
+            <div key={p.id} className="w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex flex-col group h-full border border-[#FED3C7]/30">
               <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
                 <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
               </div>
