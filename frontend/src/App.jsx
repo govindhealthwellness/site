@@ -466,8 +466,8 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
                 <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
                 {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-2 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-1 md:gap-2 group-hover:shadow-[#DA3A36]/20 text-[6px] md:text-sm">
-                <ShoppingBag size={10} className="md:w-[18px] md:h-[18px]" /> <span className="hidden md:inline">Buy Now</span><span className="md:hidden">Buy</span>
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
+                <ShoppingBag size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">Buy Now</span>
               </button>
             </div>
           ))}
@@ -492,8 +492,8 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
                 <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
                 {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-2 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-1 md:gap-2 group-hover:shadow-[#DA3A36]/20 text-[6px] md:text-sm">
-                <ShoppingBag size={10} className="md:w-[18px] md:h-[18px]" /> <span className="hidden md:inline">Buy Now</span><span className="md:hidden">Buy</span>
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
+                <ShoppingBag size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">Buy Now</span>
               </button>
             </div>
           ))}
@@ -518,8 +518,8 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
                 <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
                 {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-2 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-1 md:gap-2 group-hover:shadow-[#DA3A36]/20 text-[6px] md:text-sm">
-                <ShoppingBag size={10} className="md:w-[18px] md:h-[18px]" /> <span className="hidden md:inline">Buy Now</span><span className="md:hidden">Buy</span>
+              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
+                <ShoppingBag size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">Buy Now</span>
               </button>
             </div>
           ))}
