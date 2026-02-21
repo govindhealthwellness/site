@@ -10,7 +10,7 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// --- Axios Configuration ---
+// --- Axios Confi ---
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
 // --- Theme & Style Constants ---
@@ -485,7 +485,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
 
       <section className="px-6 max-w-7xl mx-auto space-y-4">
         <div className="text-center space-y-2">
-          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Chocolate Sanctuary</h2>
+          <h2 className="text-3xl md:text-5xl font-serif italic text-[#DA3A36]">Chocolate Sanctuary</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Our Viral Vitality Chocolates</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
@@ -510,7 +510,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
 
       <section className="px-6 max-w-7xl mx-auto space-y-4">
         <div className="text-center space-y-2">
-          <h2 className="text-5xl font-serif italic text-[#DA3A36]">After Dark Collection</h2>
+          <h2 className="text-3xl md:text-5xl font-serif italic text-[#DA3A36]">After Dark Collection</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
@@ -535,7 +535,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
 
       <section className="px-6 max-w-7xl mx-auto space-y-4">
         <div className="text-center space-y-2">
-          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Date Night Combos</h2>
+          <h2 className="text-3xl md:text-5xl font-serif italic text-[#DA3A36]">Date Night Combos</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Perfect Pairings</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
@@ -624,7 +624,7 @@ function ShopView({ products, addToCart, setProduct, filter }) {
   return (
     <div className="max-w-7xl mx-auto px-6 py-24 min-h-screen space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-500">
       <div className="text-center space-y-4">
-        <h1 className="text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : (filter === 'Combos' ? 'Date Night Combos' : 'After Dark Collection')}</h1>
+        <h1 className="text-4xl md:text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : (filter === 'Combos' ? 'Date Night Combos' : 'After Dark Collection')}</h1>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filtered.map(p => (
