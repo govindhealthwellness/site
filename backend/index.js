@@ -22,16 +22,20 @@ app.use(express.json());
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '465'),
-    secure: process.env.SMTP_PORT === '465' || !process.env.SMTP_PORT, // true for 465, false for other ports
+    secure: process.env.SMTP_PORT === '465' || !process.env.SMTP_PORT,
+    pool: true, // Reuse connections
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
     },
-    connectionTimeout: 10000, // 10s
-    greetingTimeout: 10000,   // 10s
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
 });
 
-const sendOrderEmail = async (order) => {
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const sendOrderEmail = async (order, attempt = 1) => {
+    const maxRetries = 3;
     try {
         const itemsList = order.items.map(it => `<li>${it.name} x ${it.qty} - ₹${it.price * it.qty}</li>`).join('');
         const mailOptions = {
@@ -51,10 +55,21 @@ const sendOrderEmail = async (order) => {
                 </div>
             `
         };
+
+        console.log(`[MAIL] Sending email for order #${order.id} (Attempt ${attempt})...`);
         await transporter.sendMail(mailOptions);
-        console.log(`[MAIL] Email sent for order #${order.id}`);
+        console.log(`[MAIL] Email sent successfully for order #${order.id}`);
     } catch (error) {
-        console.error('[MAIL] Failed to send email:', error);
+        console.error(`[MAIL] Attempt ${attempt} failed:`, error.message);
+
+        if (attempt < maxRetries) {
+            const retryDelay = attempt * 3000; // 3s, 6s
+            console.log(`[MAIL] Retrying in ${retryDelay / 1000}s...`);
+            await sleep(retryDelay);
+            return sendOrderEmail(order, attempt + 1);
+        } else {
+            console.error(`[MAIL] Max retries reached. Failed to send email for order #${order.id}`);
+        }
     }
 };
 
@@ -269,7 +284,7 @@ app.post('/api/orders', async (req, res) => {
         );
 
         const newOrder = { id: result.insertId, customer: customerData, items, total };
-        sendOrderEmail(newOrder); // Async trigger
+        await sendOrderEmail(newOrder); // Await for serverless stability
 
         res.json({ id: result.insertId, ...req.body });
     } catch (err) {
