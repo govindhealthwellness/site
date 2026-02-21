@@ -181,6 +181,29 @@ export default function App() {
   useEffect(() => { if (window.location.pathname === '/admin') setView('admin'); }, []);
   useEffect(() => { window.scrollTo(0, 0); }, [view]);
 
+  // --- Browser History (Back Button) Handling ---
+  useEffect(() => {
+    // Initial state
+    window.history.replaceState({ view: 'home' }, '');
+
+    const handlePopState = (e) => {
+      if (e.state && e.state.view) {
+        setView(e.state.view);
+      } else {
+        setView('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    // Prevent pushing duplicate state
+    if (window.history.state?.view !== view) {
+      window.history.pushState({ view }, '');
+    }
+  }, [view]);
+
   useEffect(() => {
     const verified = localStorage.getItem('ageVerified');
     if (verified === 'true') {
@@ -448,7 +471,7 @@ const HeroSection = ({ media, setView }) => {
 
 function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-700">
+    <div className="space-y-24 pb-12 animate-in fade-in duration-700">
       <HeroSection media={media} setView={setView} />
 
       <section className="px-6 max-w-7xl mx-auto">
@@ -460,7 +483,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         <CustomSlider items={media.momentImages} aspect="portrait" />
       </section>
 
-      <section className="px-6 max-w-7xl mx-auto space-y-16">
+      <section className="px-6 max-w-7xl mx-auto space-y-4">
         <div className="text-center space-y-2">
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Chocolate Sanctuary</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Our Viral Vitality Chocolates</p>
@@ -485,7 +508,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         </div>
       </section>
 
-      <section className="px-6 max-w-7xl mx-auto space-y-16">
+      <section className="px-6 max-w-7xl mx-auto space-y-4">
         <div className="text-center space-y-2">
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">After Dark Collection</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
@@ -510,7 +533,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         </div>
       </section>
 
-      <section className="px-6 max-w-7xl mx-auto space-y-16">
+      <section className="px-6 max-w-7xl mx-auto space-y-4">
         <div className="text-center space-y-2">
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Date Night Combos</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Perfect Pairings</p>
