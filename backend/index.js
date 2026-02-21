@@ -1,16 +1,60 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const Razorpay = require('razorpay');
+const nodemailer = require('nodemailer');
 const { query: dbQuery, testConnection } = require('./db');
 
-dotenv.config();
+console.log('[MAIL] SMTP Config:', {
+    host: process.env.SMTP_HOST,
+    user: process.env.SMTP_USER ? 'Present' : 'Missing',
+    pass: process.env.SMTP_PASS ? 'Present' : 'Missing'
+});
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Transporter Config
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false, // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
+
+const sendOrderEmail = async (order) => {
+    try {
+        const itemsList = order.items.map(it => `<li>${it.name} x ${it.qty} - ₹${it.price * it.qty}</li>`).join('');
+        const mailOptions = {
+            from: `"LuvBees Care" <${process.env.SMTP_USER}>`,
+            to: order.customer.email,
+            subject: `Order Confirmed - #${order.id} | LuvBees`,
+            html: `
+                <div style="font-family: sans-serif; color: #4A0404; max-width: 600px; margin: auto; border: 1px solid #FED3C7; padding: 20px; border-radius: 20px;">
+                    <h1 style="color: #DA3A36; text-align: center;">Order Confirmed!</h1>
+                    <p>Hi ${order.customer.name},</p>
+                    <p>Thank you for feeding the flame with LuvBees! Your order <strong>#${order.id}</strong> has been successfully placed.</p>
+                    <h3>Order Items:</h3>
+                    <ul>${itemsList}</ul>
+                    <p><strong>Total Amount:</strong> ₹${order.total}</p>
+                    <hr style="border: none; border-top: 1px solid #FED3C7;" />
+                    <p style="font-size: 12px; opacity: 0.7;">We'll notify you when your order is shipped!</p>
+                </div>
+            `
+        };
+        await transporter.sendMail(mailOptions);
+        console.log(`[MAIL] Email sent for order #${order.id}`);
+    } catch (error) {
+        console.error('[MAIL] Failed to send email:', error);
+    }
+};
 
 // Cloudinary Config
 cloudinary.config({
@@ -221,6 +265,10 @@ app.post('/api/orders', async (req, res) => {
             'INSERT INTO orders (customer_info, items, subtotal, shipCost, total, status) VALUES (?, ?, ?, ?, ?, ?)',
             [JSON.stringify(customerData), JSON.stringify(items), subtotal, shipCost, total, status]
         );
+
+        const newOrder = { id: result.insertId, customer: customerData, items, total };
+        sendOrderEmail(newOrder); // Async trigger
+
         res.json({ id: result.insertId, ...req.body });
     } catch (err) {
         console.error('[API] Error creating order:', err);

@@ -179,6 +179,7 @@ export default function App() {
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
 
   useEffect(() => { if (window.location.pathname === '/admin') setView('admin'); }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, [view]);
 
   useEffect(() => {
     const verified = localStorage.getItem('ageVerified');
@@ -217,6 +218,7 @@ export default function App() {
   });
   const [faqs, setFaqs] = useState([]);
   const [delivery, setDelivery] = useState({ fee: 50, threshold: 500, note: 'Buy above ₹500 for Free Delivery!' });
+  const [offerNotes, setOfferNotes] = useState({ text: 'BOOM • Free Delivery • Limited Stock', active: true });
 
   // Refresh Data Trigger
   const [refresh, setRefresh] = useState(0);
@@ -241,6 +243,9 @@ export default function App() {
 
         const dRes = await axios.get('/api/configs/delivery').catch(() => null);
         if (dRes?.data) setDelivery(dRes.data);
+
+        const oRes = await axios.get('/api/configs/offernotes').catch(() => null);
+        if (oRes?.data) setOfferNotes(oRes.data);
 
       } catch (err) { console.error("Data Load Error", err); }
       finally { setLoading(false); }
@@ -323,6 +328,12 @@ export default function App() {
         </div>
       </div>
 
+      {offerNotes.active && (
+        <div className="bg-[#F6D55F] text-[#4A0404] py-1 text-[10px] font-black uppercase tracking-[0.2em] text-center sticky top-[32px] z-[55] border-b border-[#DA3A36]/10">
+          {offerNotes.text}
+        </div>
+      )}
+
       <nav className="sticky top-[32px] z-50 bg-[#F4E6C5]/90 backdrop-blur-md border-b border-[#DA3A36]/10 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setView('home')}>
           <img src="/luvbees.png" className="w-10 h-10 object-contain drop-shadow-md group-hover:scale-110 transition" alt="LuvBees" />
@@ -330,9 +341,9 @@ export default function App() {
         </div>
 
         <div className="hidden md:flex gap-8 text-[10px] uppercase font-bold tracking-widest opacity-60">
-          <button onClick={() => setView('chocolate-shop')} className={`hover:text-[#DA3A36] ${view === 'chocolate-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Chocolates</button>
-          <button onClick={() => setView('combo-shop')} className={`hover:text-[#DA3A36] ${view === 'combo-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Combos</button>
-          <button onClick={() => setView('gift-shop')} className={`hover:text-[#DA3A36] ${view === 'gift-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Gifts & Extras</button>
+          <button onClick={() => setView('chocolate-shop')} className={`hover:text-[#DA3A36] ${view === 'chocolate-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Chocolate Sanctuary</button>
+          <button onClick={() => setView('combo-shop')} className={`hover:text-[#DA3A36] ${view === 'combo-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Date Night Combos</button>
+          <button onClick={() => setView('gift-shop')} className={`hover:text-[#DA3A36] ${view === 'gift-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>After Dark Collection</button>
         </div>
 
         <div className="flex gap-4 items-center">
@@ -351,7 +362,7 @@ export default function App() {
         {view === 'gift-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Gifts" />}
         {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} />}
         {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} updateQty={updateQty} />}
-        {view === 'admin' && (adminLoggedIn ? <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} /> : <AdminLoginView onLogin={() => setAdminLoggedIn(true)} />)}
+        {view === 'admin' && (adminLoggedIn ? <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} offerNotes={offerNotes} /> : <AdminLoginView onLogin={() => setAdminLoggedIn(true)} />)}
         {view === 'success' && <SuccessView setView={setView} />}
         {view === 'privacy' && <PrivacyView setView={setView} />}
         {view === 'terms' && <TermsView setView={setView} />}
@@ -466,18 +477,17 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
                 <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
                 {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
-                <ShoppingBag size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">Buy Now</span>
+              <button onClick={() => setView('chocolate-shop')} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
+                <ChevronRight size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">View More</span>
               </button>
             </div>
           ))}
         </div>
-        <div className="text-center pt-8"><button onClick={() => setView('chocolate-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore All Chocolates</button></div>
       </section>
 
       <section className="px-6 max-w-7xl mx-auto space-y-16">
         <div className="text-center space-y-2">
-          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Gift Boutique</h2>
+          <h2 className="text-5xl font-serif italic text-[#DA3A36]">After Dark Collection</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
@@ -492,18 +502,17 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
                 <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
                 {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
-                <ShoppingBag size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">Buy Now</span>
+              <button onClick={() => setView('gift-shop')} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
+                <ChevronRight size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">View More</span>
               </button>
             </div>
           ))}
         </div>
-        <div className="text-center pt-8"><button onClick={() => setView('gift-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore Gift Boutique</button></div>
       </section>
 
       <section className="px-6 max-w-7xl mx-auto space-y-16">
         <div className="text-center space-y-2">
-          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Combos Collection</h2>
+          <h2 className="text-5xl font-serif italic text-[#DA3A36]">Date Night Combos</h2>
           <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Perfect Pairings</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
@@ -518,13 +527,12 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
                 <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
                 {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
               </div>
-              <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
-                <ShoppingBag size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">Buy Now</span>
+              <button onClick={() => setView('combo-shop')} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
+                <ChevronRight size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">View More</span>
               </button>
             </div>
           ))}
         </div>
-        <div className="text-center pt-8"><button onClick={() => setView('combo-shop')} className="inline-flex items-center gap-3 border-2 border-[#DA3A36] text-[#DA3A36] px-12 py-5 rounded-full font-bold uppercase text-xs hover:bg-[#DA3A36] hover:text-white transition shadow-xl group">Explore Combos</button></div>
       </section>
       <section className="px-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
@@ -539,8 +547,16 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         <div className="max-w-5xl mx-auto text-center space-y-16">
           <h2 className="text-5xl font-serif italic text-[#DA3A36]">Explore The Ingredients</h2>
           <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-10 relative z-10 px-0">
-            {[{ n: 'Dark Choc', d: 'Mood', i: '🍫' }, { n: 'Ashwa', d: 'Stress', i: '🌿' }, { n: 'Maca', d: 'Vitality', i: '💪' }].map(ing => (
-              <div key={ing.n} className="p-4 md:p-10 bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all border border-[#FED3C7] group text-center">
+            {[
+              { n: 'Dark Chocolate', d: 'Mood', i: '🍫', l: 'https://www.formen.health/blogs/sexual-health/dark-chocolate-benefits-for-men' },
+              { n: 'Ashwagandha', d: 'Stress', i: '🌿', l: 'https://www.tandfonline.com/doi/full/10.1080/19390211.2020.1741484' },
+              { n: 'Maca Root', d: 'Vitality', i: '💪', l: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2928177/' }
+            ].map(ing => (
+              <div
+                key={ing.n}
+                onClick={() => window.open(ing.l, '_blank')}
+                className="p-4 md:p-10 bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all border border-[#FED3C7] group text-center cursor-pointer hover:scale-105 active:scale-95"
+              >
                 <div className="text-2xl md:text-5xl mb-2 md:mb-6">{ing.i}</div>
                 <h4 className="font-serif text-[10px] md:text-2xl text-[#DA3A36] italic leading-tight">{ing.n}</h4>
                 <p className="text-[6px] md:text-xs opacity-60 uppercase font-bold tracking-tighter mt-1 md:mt-4">{ing.d}</p>
@@ -585,7 +601,7 @@ function ShopView({ products, addToCart, setProduct, filter }) {
   return (
     <div className="max-w-7xl mx-auto px-6 py-24 min-h-screen space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-500">
       <div className="text-center space-y-4">
-        <h1 className="text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : (filter === 'Combos' ? 'Combos Collection' : 'Gift Boutique')}</h1>
+        <h1 className="text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : (filter === 'Combos' ? 'Date Night Combos' : 'After Dark Collection')}</h1>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filtered.map(p => (
@@ -597,6 +613,7 @@ function ShopView({ products, addToCart, setProduct, filter }) {
             <p className="text-[10px] opacity-50 italic my-3 line-clamp-3 leading-relaxed">{p.description}</p>
             <div className="mt-auto mb-6 flex items-center gap-2">
               <span className="text-2xl font-bold text-[#DA3A36] italic">₹{p.price}</span>
+              {p.regularPrice > p.price && <span className="text-sm line-through opacity-30">₹{p.regularPrice}</span>}
             </div>
             <button onClick={() => addToCart(p)} className="w-full bg-[#DA3A36] text-white py-4 rounded-2xl font-bold uppercase text-[10px] shadow-lg active:scale-95 transition tracking-widest">Add to Cart</button>
           </div>
@@ -670,7 +687,7 @@ function ProductDetailView({ product, addToCart, setView }) {
 }
 
 function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, remove, clearCart, updateQty }) {
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', doorNo: '', street1: '', street2: '', pincode: '' });
   const [isOrdering, setIsOrdering] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [discount, setDiscount] = useState(null);
@@ -713,11 +730,15 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
   };
 
   const handleCheckout = async () => {
-    if (!formData.name || !formData.phone || !formData.email || !formData.address) return;
+    if (!formData.name || !formData.phone || !formData.email || !formData.doorNo || !formData.street1 || !formData.pincode) {
+      alert("Please fill all required shipping fields.");
+      return;
+    }
     setIsOrdering(true);
     try {
+      const fullAddress = `${formData.doorNo}, ${formData.street1}, ${formData.street2 ? formData.street2 + ', ' : ''}${formData.pincode}`;
       const orderData = {
-        customer: formData,
+        customer: { ...formData, address: fullAddress },
         items: cart,
         subtotal,
         shipCost,
@@ -787,7 +808,10 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
                   <span className="text-sm font-bold">{i.qty}</span>
                   <button onClick={() => updateQty(i.id, 1)} className="w-6 h-6 rounded-full bg-[#DA3A36]/10 hover:bg-[#DA3A36] hover:text-white flex items-center justify-center font-bold text-[#DA3A36] transition">+</button>
                 </div>
-                <div className="font-bold text-[#DA3A36] text-lg">₹{i.price * i.qty}</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-bold text-[#DA3A36] text-lg">₹{i.price * i.qty}</div>
+                  {i.regularPrice > i.price && <div className="text-[10px] line-through opacity-30">₹{i.regularPrice * i.qty}</div>}
+                </div>
               </div>
               <button onClick={() => remove(i.id)} className="absolute -top-2 -right-2 bg-white text-red-400 p-3 rounded-full shadow-lg border border-[#FED3C7]"><Trash2 size={18} /></button>
             </div>
@@ -804,7 +828,12 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
               <input placeholder="Phone" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
               <input placeholder="Email" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
             </div>
-            <textarea placeholder="Shipping Address" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none min-h-[120px]" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+            <div className="grid grid-cols-3 gap-4">
+              <input placeholder="Door No" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.doorNo} onChange={e => setFormData({ ...formData, doorNo: e.target.value })} />
+              <input placeholder="Pin Code" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.pincode} onChange={e => setFormData({ ...formData, pincode: e.target.value })} />
+            </div>
+            <input placeholder="Street 1 / Area" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.street1} onChange={e => setFormData({ ...formData, street1: e.target.value })} />
+            <input placeholder="Street 2 (Optional)" className="w-full p-4 rounded-2xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={formData.street2} onChange={e => setFormData({ ...formData, street2: e.target.value })} />
           </div>
 
           <div className="space-y-4 pt-8 border-t border-[#DA3A36]/10">
@@ -846,7 +875,7 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
 
           <button
             onClick={handleCheckout}
-            disabled={!formData.name || !formData.phone || !formData.email || !formData.address || isOrdering}
+            disabled={!formData.name || !formData.phone || !formData.email || !formData.doorNo || !formData.street1 || !formData.pincode || isOrdering}
             className="w-full bg-[#DA3A36] text-white py-6 rounded-[2rem] font-bold uppercase shadow-2xl disabled:opacity-30 border-2 border-[#F6D55F] transition-all"
           >
             {isOrdering ? 'Processing...' : 'Complete via Razorpay'}
@@ -857,7 +886,7 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
   );
 }
 
-function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) {
+function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, offerNotes }) {
   const [tab, setTab] = useState('inventory');
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null); // Updated State
@@ -869,14 +898,15 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
   const [mForm, setMForm] = useState(media);
   const [fForm, setFaqForm] = useState(faqs);
   const [dForm, setDForm] = useState(delivery);
+  const [oForm, setOForm] = useState(offerNotes || { text: '', active: true });
   const [promos, setPromos] = useState([]);
 
   useEffect(() => {
     // Load orders
     axios.get('/api/orders').then(res => setOrders(res.data)).catch(console.error);
     if (tab === 'promos') axios.get('/api/promocodes').then(res => setPromos(res.data)).catch(console.error);
-    setNForm(flashnews); setMForm(media); setFaqForm(faqs); setDForm(delivery);
-  }, [flashnews, media, faqs, delivery, tab]);
+    setNForm(flashnews); setMForm(media); setFaqForm(faqs); setDForm(delivery); setOForm(offerNotes);
+  }, [flashnews, media, faqs, delivery, offerNotes, tab]);
 
   const saveConfig = async (key, val) => {
     try {
@@ -1190,6 +1220,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
             { id: 'promos', label: 'Promo Codes', icon: <Percent size={14} /> },
             { id: 'orders', label: 'Orders', icon: <ClipboardList size={14} /> },
             { id: 'storefront', label: 'Marquee', icon: <Zap size={14} /> },
+            { id: 'offernotes', label: 'Offer Notes', icon: <Award size={14} /> },
             { id: 'media', label: 'Media', icon: <ImageIcon size={14} /> },
             { id: 'shipping', label: 'Shipping', icon: <Truck size={14} /> },
             { id: 'faqs', label: 'FAQs', icon: <HelpCircle size={14} /> }
@@ -1442,6 +1473,33 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData }) 
                 ></textarea>
               </div>
               <button onClick={() => saveConfig('delivery', dForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Sync Shipping Rules</button>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        tab === 'offernotes' && (
+          <div className="bg-white p-12 rounded-[3rem] border border-[#DA3A36]/10 shadow-2xl space-y-8 max-w-2xl mx-auto">
+            <h3 className="font-serif text-3xl text-[#DA3A36] italic">Offer Notes Broadcast</h3>
+            <div className="space-y-4">
+              <textarea
+                className="w-full bg-[#F4E6C5]/20 p-6 rounded-[1.5rem] border border-[#FED3C7] text-sm"
+                rows={3}
+                placeholder="Ex: FREE DELIVERY ON ALL ORDERS"
+                value={oForm.text}
+                onChange={e => setOForm({ ...oForm, text: e.target.value })}
+              />
+              <div className="flex items-center gap-4 px-6">
+                <input
+                  type="checkbox"
+                  className="w-6 h-6 accent-[#DA3A36]"
+                  checked={oForm.active}
+                  onChange={e => setOForm({ ...oForm, active: e.target.checked })}
+                />
+                <span className="text-xs font-bold uppercase text-[#DA3A36]">Visible on Website</span>
+              </div>
+              <button onClick={() => saveConfig('offernotes', oForm)} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Save Offer Notes</button>
             </div>
           </div>
         )
