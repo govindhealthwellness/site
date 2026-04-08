@@ -1076,30 +1076,18 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
-    doc.text("S LUVBEES", fromX + 8, boxY + 18);
+    doc.text("LUVBEES", fromX + 8, boxY + 18);
 
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
-    doc.text("Feed the Flame", fromX + 8, boxY + 26);
+    doc.text("GOVIND HEALTH AND WELLNESS", fromX + 8, boxY + 26);
+    doc.text("CHENNAI", fromX + 8, boxY + 33);
 
-    // Split long address lines
-    const fromAddr = [
-      "Guindy, Chennai",
-      "Tamil Nadu - 600032",
-      "",
-      "Ph: +91 98765 43210"
-    ];
-    let fromLineY = boxY + 34;
-    fromAddr.forEach(line => {
-      if (line.startsWith("Ph:")) {
-        doc.setFont(undefined, 'bold');
-        doc.setFontSize(11);
-      }
-      doc.text(line, fromX + 8, fromLineY);
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(10);
-      fromLineY += 7;
-    });
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text("+918148191809", fromX + 8, boxY + 44);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
 
     // ─── TO Box (Right) ───
     const toX = margin * 2 + boxW;
@@ -1236,18 +1224,16 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
     doc.text("FROM", fromX + 20, boxY + 2, { align: "center" });
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(14);
-    doc.text("S LUVBEES", fromX + 8, boxY + 18);
+    doc.text("LUVBEES", fromX + 8, boxY + 18);
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
-    doc.text("Feed the Flame", fromX + 8, boxY + 26);
-    const fromAddr = ["Guindy, Chennai", "Tamil Nadu - 600032", "", "Ph: +91 98765 43210"];
-    let fromLineY = boxY + 34;
-    fromAddr.forEach(line => {
-      if (line.startsWith("Ph:")) { doc.setFont(undefined, 'bold'); doc.setFontSize(11); }
-      doc.text(line, fromX + 8, fromLineY);
-      doc.setFont(undefined, 'normal'); doc.setFontSize(10);
-      fromLineY += 7;
-    });
+    doc.text("GOVIND HEALTH AND WELLNESS", fromX + 8, boxY + 26);
+    doc.text("CHENNAI", fromX + 8, boxY + 33);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text("+918148191809", fromX + 8, boxY + 44);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
 
     // TO Box
     const toX = margin * 2 + boxW;
