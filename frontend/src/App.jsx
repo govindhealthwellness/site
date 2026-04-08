@@ -4,7 +4,7 @@ import {
   CheckCircle, Settings, Image as ImageIcon, Package, Play,
   HelpCircle, Zap, Video, Instagram, ShieldCheck, Award, Truck,
   MapPin, Sparkles, AlignLeft, Phone, Coffee, Gift, ArrowLeft,
-  ClipboardList, Upload, Download, Volume2, VolumeX, Facebook, FileText, Percent
+  ClipboardList, Upload, Download, Volume2, VolumeX, Facebook, FileText, Percent, Printer
 } from 'lucide-react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
@@ -1041,41 +1041,260 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
 
   const downloadPDF = (order) => {
     const doc = new jsPDF();
-    doc.setFontSize(22);
-    doc.setTextColor(218, 58, 54);
-    doc.text("LUVBEES ORDER RECORD", 105, 20, { align: "center" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 10;
+    const boxW = (pageW - margin * 3) / 2; // Two boxes side by side
+    const boxH = 70;
+    const boxY = 40;
 
+    // ─── Header ───
+    doc.setFillColor(218, 58, 54);
+    doc.rect(0, 0, pageW, 30, 'F');
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text("SHIPPING LABEL", pageW / 2, 14, { align: "center" });
     doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Order #${order.id}  |  ${new Date(order.created_at || Date.now()).toLocaleDateString()}`, pageW / 2, 24, { align: "center" });
+
+    // ─── FROM Box (Left) ───
+    const fromX = margin;
+    doc.setDrawColor(218, 58, 54);
+    doc.setLineWidth(1.5);
+    doc.roundedRect(fromX, boxY, boxW, boxH, 3, 3, 'S');
+
+    // FROM label badge
+    doc.setFillColor(218, 58, 54);
+    doc.roundedRect(fromX + 5, boxY - 5, 30, 10, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text("FROM", fromX + 20, boxY + 2, { align: "center" });
+
+    // FROM address content
     doc.setTextColor(0, 0, 0);
-    doc.text(`Order ID: #${order.id}`, 14, 35);
-    doc.text(`Date: ${new Date(order.created_at || Date.now()).toLocaleString()}`, 14, 40);
-
     doc.setFontSize(14);
-    doc.text("Customer Information", 14, 55);
-    doc.setFontSize(10);
-    doc.text(`Name: ${order.customer?.name || 'N/A'}`, 14, 62);
-    doc.text(`Phone: ${order.customer?.phone || 'N/A'}`, 14, 67);
-    doc.text(`Email: ${order.customer?.email || 'N/A'}`, 14, 72);
-    doc.text(`Address: ${order.customer?.address || 'N/A'}`, 14, 77);
+    doc.setFont(undefined, 'bold');
+    doc.text("S LUVBEES", fromX + 8, boxY + 18);
 
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text("Feed the Flame", fromX + 8, boxY + 26);
+
+    // Split long address lines
+    const fromAddr = [
+      "Guindy, Chennai",
+      "Tamil Nadu - 600032",
+      "",
+      "Ph: +91 98765 43210"
+    ];
+    let fromLineY = boxY + 34;
+    fromAddr.forEach(line => {
+      if (line.startsWith("Ph:")) {
+        doc.setFont(undefined, 'bold');
+        doc.setFontSize(11);
+      }
+      doc.text(line, fromX + 8, fromLineY);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(10);
+      fromLineY += 7;
+    });
+
+    // ─── TO Box (Right) ───
+    const toX = margin * 2 + boxW;
+    doc.setDrawColor(218, 58, 54);
+    doc.setLineWidth(1.5);
+    doc.roundedRect(toX, boxY, boxW, boxH, 3, 3, 'S');
+
+    // TO label badge
+    doc.setFillColor(218, 58, 54);
+    doc.roundedRect(toX + 5, boxY - 5, 20, 10, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text("TO", toX + 15, boxY + 2, { align: "center" });
+
+    // TO address content
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text(order.customer?.name || 'N/A', toX + 8, boxY + 18);
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+
+    // Build TO address from individual fields or fallback to combined address
+    const cust = order.customer || {};
+    const toAddrLines = [];
+    if (cust.doorNo) toAddrLines.push(`${cust.doorNo}, ${cust.street1 || ''}`);
+    else if (cust.address) {
+      // Split address into lines for readability (max ~40 chars per line)
+      const addr = cust.address;
+      const words = addr.split(', ');
+      let currentLine = '';
+      words.forEach(word => {
+        if ((currentLine + word).length > 40) {
+          toAddrLines.push(currentLine.trim().replace(/,\s*$/, ''));
+          currentLine = word + ', ';
+        } else {
+          currentLine += word + ', ';
+        }
+      });
+      if (currentLine.trim()) toAddrLines.push(currentLine.trim().replace(/,\s*$/, ''));
+    }
+    if (cust.street2) toAddrLines.push(cust.street2);
+    if (cust.pincode && !toAddrLines.some(l => l.includes(cust.pincode))) toAddrLines.push(`PIN: ${cust.pincode}`);
+
+    let toLineY = boxY + 26;
+    toAddrLines.forEach(line => {
+      doc.text(line, toX + 8, toLineY);
+      toLineY += 6;
+    });
+
+    // Phone number (bold, prominent)
+    toLineY = Math.max(toLineY, boxY + 52);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text(`Ph: ${cust.phone || 'N/A'}`, toX + 8, toLineY);
+    doc.setFont(undefined, 'normal');
+
+    // ─── Dashed cut line ───
+    const cutY = boxY + boxH + 12;
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.5);
+    doc.setLineDashPattern([3, 3], 0);
+    doc.line(margin, cutY, pageW - margin, cutY);
+    doc.setLineDashPattern([], 0); // Reset
+
+    doc.setFontSize(7);
+    doc.setTextColor(180, 180, 180);
+    doc.text("✂  CUT HERE — BELOW IS FOR INTERNAL REFERENCE", pageW / 2, cutY - 2, { align: "center" });
+
+    // ─── Order Items Table (below cut line) ───
     autoTable(doc, {
-      startY: 85,
-      head: [['Product Name', 'Quantity', 'Price', 'Subtotal']],
+      startY: cutY + 8,
+      head: [['Product', 'Qty', 'Price', 'Subtotal']],
       body: (order.items || []).map(item => [
         item.name,
         item.qty,
         `Rs. ${item.price}`,
         `Rs. ${item.price * item.qty}`
       ]),
-      headStyles: { fillColor: [218, 58, 54] }
+      headStyles: { fillColor: [218, 58, 54], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      margin: { left: margin, right: margin },
+      columnStyles: {
+        0: { cellWidth: 'auto' },
+        1: { cellWidth: 25, halign: 'center' },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+      }
     });
 
-    const finalY = doc.lastAutoTable.finalY + 10;
+    // ─── Total bar ───
+    const tableEndY = doc.lastAutoTable.finalY + 5;
+    doc.setFillColor(218, 58, 54);
+    doc.roundedRect(margin, tableEndY, pageW - margin * 2, 14, 2, 2, 'F');
     doc.setFontSize(12);
-    doc.text(`Total Amount: Rs. ${order.total}`, 14, finalY);
-    doc.text(`Status: ${order.status}`, 14, finalY + 7);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text(`TOTAL: Rs. ${order.total}`, pageW / 2, tableEndY + 9, { align: "center" });
 
-    doc.save(`order_${order.id}.pdf`);
+    doc.save(`luvbees_shipping_label_${order.id}.pdf`);
+  };
+
+  const printShippingLabel = (order) => {
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 10;
+    const boxW = (pageW - margin * 3) / 2;
+    const boxH = 70;
+    const boxY = 40;
+
+    // Header
+    doc.setFillColor(218, 58, 54);
+    doc.rect(0, 0, pageW, 30, 'F');
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text("SHIPPING LABEL", pageW / 2, 14, { align: "center" });
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Order #${order.id}  |  ${new Date(order.created_at || Date.now()).toLocaleDateString()}`, pageW / 2, 24, { align: "center" });
+
+    // FROM Box
+    const fromX = margin;
+    doc.setDrawColor(218, 58, 54);
+    doc.setLineWidth(1.5);
+    doc.roundedRect(fromX, boxY, boxW, boxH, 3, 3, 'S');
+    doc.setFillColor(218, 58, 54);
+    doc.roundedRect(fromX + 5, boxY - 5, 30, 10, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text("FROM", fromX + 20, boxY + 2, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.text("S LUVBEES", fromX + 8, boxY + 18);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text("Feed the Flame", fromX + 8, boxY + 26);
+    const fromAddr = ["Guindy, Chennai", "Tamil Nadu - 600032", "", "Ph: +91 98765 43210"];
+    let fromLineY = boxY + 34;
+    fromAddr.forEach(line => {
+      if (line.startsWith("Ph:")) { doc.setFont(undefined, 'bold'); doc.setFontSize(11); }
+      doc.text(line, fromX + 8, fromLineY);
+      doc.setFont(undefined, 'normal'); doc.setFontSize(10);
+      fromLineY += 7;
+    });
+
+    // TO Box
+    const toX = margin * 2 + boxW;
+    doc.setDrawColor(218, 58, 54);
+    doc.setLineWidth(1.5);
+    doc.roundedRect(toX, boxY, boxW, boxH, 3, 3, 'S');
+    doc.setFillColor(218, 58, 54);
+    doc.roundedRect(toX + 5, boxY - 5, 20, 10, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text("TO", toX + 15, boxY + 2, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.text(order.customer?.name || 'N/A', toX + 8, boxY + 18);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    const cust = order.customer || {};
+    const toAddrLines = [];
+    if (cust.doorNo) toAddrLines.push(`${cust.doorNo}, ${cust.street1 || ''}`);
+    else if (cust.address) {
+      const words = cust.address.split(', ');
+      let currentLine = '';
+      words.forEach(word => {
+        if ((currentLine + word).length > 40) { toAddrLines.push(currentLine.trim().replace(/,\s*$/, '')); currentLine = word + ', '; }
+        else { currentLine += word + ', '; }
+      });
+      if (currentLine.trim()) toAddrLines.push(currentLine.trim().replace(/,\s*$/, ''));
+    }
+    if (cust.street2) toAddrLines.push(cust.street2);
+    if (cust.pincode && !toAddrLines.some(l => l.includes(cust.pincode))) toAddrLines.push(`PIN: ${cust.pincode}`);
+    let toLineY = boxY + 26;
+    toAddrLines.forEach(line => { doc.text(line, toX + 8, toLineY); toLineY += 6; });
+    toLineY = Math.max(toLineY, boxY + 52);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text(`Ph: ${cust.phone || 'N/A'}`, toX + 8, toLineY);
+
+    // Open in new tab for printing
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    const printWindow = window.open(pdfUrl);
+    if (printWindow) {
+      printWindow.addEventListener('load', () => {
+        printWindow.print();
+      });
+    }
   };
 
   const downloadOrdersReport = (period) => {
@@ -1345,7 +1564,8 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
                       <option>Pending</option><option>Shipped</option><option>Delivered</option>
                     </select>
                     <div className="flex gap-2 justify-end">
-                      <button onClick={() => downloadPDF(order)} className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
+                      <button onClick={() => downloadPDF(order)} title="Download Shipping Label" className="p-3 bg-[#DA3A36]/10 text-[#DA3A36] rounded-full hover:bg-[#DA3A36] hover:text-white transition shadow-sm"><Download size={18} /></button>
+                      <button onClick={() => printShippingLabel(order)} title="Print Shipping Label" className="p-3 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white transition shadow-sm"><Printer size={18} /></button>
                       <button onClick={() => deleteOrder(order.id)} className="p-3 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition shadow-sm"><Trash2 size={18} /></button>
                     </div>
                   </div>
