@@ -242,6 +242,11 @@ export default function App() {
   const [faqs, setFaqs] = useState([]);
   const [delivery, setDelivery] = useState({ fee: 50, threshold: 500, note: 'Buy above ₹500 for Free Delivery!' });
   const [offerNotes, setOfferNotes] = useState({ text: 'BOOM • Free Delivery • Limited Stock', active: true });
+  const [categories, setCategories] = useState([
+    { id: 'Chocolates', name: 'Chocolates', displayName: 'Chocolate Sanctuary', subtitle: 'Our Viral Vitality Chocolates', icon: 'Coffee' },
+    { id: 'Combos', name: 'Combos', displayName: 'Date Night Combos', subtitle: 'Perfect Pairings', icon: 'Package' },
+    { id: 'Gifts', name: 'Gifts', displayName: 'After Dark Collection', subtitle: 'Curated Intimacy Essentials', icon: 'Gift' }
+  ]);
 
   // Refresh Data Trigger
   const [refresh, setRefresh] = useState(0);
@@ -269,6 +274,9 @@ export default function App() {
 
         const oRes = await axios.get('/api/configs/offernotes').catch(() => null);
         if (oRes?.data) setOfferNotes(oRes.data);
+
+        const cRes = await axios.get('/api/configs/categories').catch(() => null);
+        if (cRes?.data?.items && cRes.data.items.length > 0) setCategories(cRes.data.items);
 
       } catch (err) { console.error("Data Load Error", err); }
       finally { setLoading(false); }
@@ -364,9 +372,9 @@ export default function App() {
         </div>
 
         <div className="hidden md:flex gap-8 text-[10px] uppercase font-bold tracking-widest opacity-60">
-          <button onClick={() => setView('chocolate-shop')} className={`hover:text-[#DA3A36] ${view === 'chocolate-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Chocolate Sanctuary</button>
-          <button onClick={() => setView('combo-shop')} className={`hover:text-[#DA3A36] ${view === 'combo-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>Date Night Combos</button>
-          <button onClick={() => setView('gift-shop')} className={`hover:text-[#DA3A36] ${view === 'gift-shop' ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>After Dark Collection</button>
+          {categories.map(cat => (
+            <button key={cat.id} onClick={() => setView(`shop-${cat.id}`)} className={`hover:text-[#DA3A36] ${view === `shop-${cat.id}` ? 'text-[#DA3A36] underline underline-offset-4' : ''}`}>{cat.displayName}</button>
+          ))}
         </div>
 
         <div className="flex gap-4 items-center">
@@ -379,13 +387,13 @@ export default function App() {
       </nav>
 
       <main>
-        {view === 'home' && <HomeView products={products} setView={setView} addToCart={addToCart} media={media} faqs={faqs} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} />}
-        {view === 'chocolate-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Chocolates" />}
-        {view === 'combo-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Combos" />}
-        {view === 'gift-shop' && <ShopView products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter="Gifts" />}
-        {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} />}
+        {view === 'home' && <HomeView products={products} setView={setView} addToCart={addToCart} media={media} faqs={faqs} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} categories={categories} />}
+        {categories.map(cat => (
+          view === `shop-${cat.id}` && <ShopView key={cat.id} products={products} addToCart={addToCart} setProduct={(p) => { setSelectedProduct(p); setView('product'); }} filter={cat.id} categoryInfo={cat} />
+        ))}
+        {view === 'product' && <ProductDetailView product={selectedProduct} addToCart={addToCart} setView={setView} categories={categories} />}
         {view === 'cart' && <CartView cart={cart} setView={setView} subtotal={subtotal} shipCost={shipCost} grandTotal={grandTotal} delivery={delivery} remove={(id) => setCart(cart.filter(i => i.id !== id))} clearCart={clearCart} updateQty={updateQty} />}
-        {view === 'admin' && (adminLoggedIn ? <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} offerNotes={offerNotes} /> : <AdminLoginView onLogin={() => setAdminLoggedIn(true)} />)}
+        {view === 'admin' && (adminLoggedIn ? <AdminPanel products={products} flashnews={flashnews} media={media} faqs={faqs} delivery={delivery} reloadData={reloadData} offerNotes={offerNotes} categories={categories} /> : <AdminLoginView onLogin={() => setAdminLoggedIn(true)} />)}
         {view === 'success' && <SuccessView setView={setView} />}
         {view === 'privacy' && <PrivacyView setView={setView} />}
         {view === 'terms' && <TermsView setView={setView} />}
@@ -437,7 +445,13 @@ const BadgeItem = ({ icon, label }) => {
   );
 };;
 
-const HeroSection = ({ media, setView }) => {
+const ICON_MAP = { Coffee, Package, Gift, Heart, Sparkles, Award, Zap };
+const getIcon = (iconName, size = 14) => {
+  const Icon = ICON_MAP[iconName] || Package;
+  return <Icon size={size} />;
+};
+
+const HeroSection = ({ media, setView, categories = [] }) => {
   const [hIdx, setHIdx] = useState(0);
   useEffect(() => {
     if (!media.heroImages?.length || media.heroImages.length <= 1) return;
@@ -459,20 +473,22 @@ const HeroSection = ({ media, setView }) => {
       <div className="relative z-20 text-center px-6 max-w-4xl space-y-8 animate-in slide-in-from-bottom-10 duration-1000">
         <div className="flex justify-center"><img src="/heart-flame.png" className="w-32 h-32 object-contain animate-pulse drop-shadow-xl" alt="" /></div>
         <h1 className="text-6xl md:text-9xl font-serif italic text-[#DA3A36] leading-tight text-shadow">Feed the Flame, Naturally</h1>
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <button onClick={() => setView('chocolate-shop')} className="bg-[#DA3A36] text-white px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#F6D55F] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Coffee size={14} /> Chocolates</button>
-          <button onClick={() => setView('combo-shop')} className="bg-white text-[#DA3A36] px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Package size={14} /> Combos</button>
-          <button onClick={() => setView('gift-shop')} className="bg-white text-[#DA3A36] px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 border-[#DA3A36] shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2"><Gift size={14} /> Gifts</button>
+        <div className="flex flex-col sm:flex-row justify-center gap-4 flex-wrap">
+          {categories.map((cat, i) => (
+            <button key={cat.id} onClick={() => setView(`shop-${cat.id}`)} className={`${i === 0 ? 'bg-[#DA3A36] text-white border-[#F6D55F]' : 'bg-white text-[#DA3A36] border-[#DA3A36]'} px-6 py-4 md:px-10 md:py-5 rounded-full font-bold uppercase tracking-[0.2em] border-2 shadow-2xl hover:scale-105 transition active:scale-95 text-[10px] flex items-center justify-center gap-2`}>
+              {getIcon(cat.icon)} {cat.name}
+            </button>
+          ))}
         </div>
       </div>
     </section>
   );
 };
 
-function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
+function HomeView({ products, setView, addToCart, media, faqs, setProduct, categories = [] }) {
   return (
     <div className="space-y-24 pb-12 animate-in fade-in duration-700">
-      <HeroSection media={media} setView={setView} />
+      <HeroSection media={media} setView={setView} categories={categories} />
 
       <section className="px-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
@@ -483,80 +499,37 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
         <CustomSlider items={media.momentImages} aspect="portrait" />
       </section>
 
-      <section className="px-6 max-w-7xl mx-auto space-y-4">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl md:text-5xl font-serif italic text-[#DA3A36]">Chocolate Sanctuary</h2>
-          <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Our Viral Vitality Chocolates</p>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
-          {products.filter(p => p.active && p.category === 'Chocolates').slice(0, 3).map((p, i) => (
-            <div key={p.id} className={`${i > 0 ? 'hidden md:flex' : 'flex'} w-full md:w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex-col group h-full border border-[#FED3C7]/30`}>
-              <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-                <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
-              </div>
-              <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
-              <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
-              <div className="flex items-end gap-1 md:gap-3 mb-2 md:mb-8 mt-1 md:mt-0">
-                <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
-                {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
-              </div>
-              <button onClick={() => setView('chocolate-shop')} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
-                <ChevronRight size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">View More</span>
-              </button>
+      {categories.map(cat => {
+        const catProducts = products.filter(p => p.active && p.category === cat.id);
+        if (catProducts.length === 0) return null;
+        return (
+          <section key={cat.id} className="px-6 max-w-7xl mx-auto space-y-4">
+            <div className="text-center space-y-2">
+              <h2 className="text-3xl md:text-5xl font-serif italic text-[#DA3A36]">{cat.displayName}</h2>
+              <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">{cat.subtitle}</p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="px-6 max-w-7xl mx-auto space-y-4">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl md:text-5xl font-serif italic text-[#DA3A36]">After Dark Collection</h2>
-          <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Curated Intimacy Essentials</p>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
-          {products.filter(p => p.active && p.category === 'Gifts').slice(0, 3).map((p, i) => (
-            <div key={p.id} className={`${i > 0 ? 'hidden md:flex' : 'flex'} w-full md:w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex-col group h-full border border-[#FED3C7]/30`}>
-              <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-                <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
-              </div>
-              <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
-              <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
-              <div className="flex items-end gap-1 md:gap-3 mb-2 md:mb-8 mt-1 md:mt-0">
-                <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
-                {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
-              </div>
-              <button onClick={() => setView('gift-shop')} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
-                <ChevronRight size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">View More</span>
-              </button>
+            <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
+              {catProducts.slice(0, 3).map((p, i) => (
+                <div key={p.id} className={`${i > 0 ? 'hidden md:flex' : 'flex'} w-full md:w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex-col group h-full border border-[#FED3C7]/30`}>
+                  <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
+                    <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
+                    {p.label && <span className="absolute top-2 left-2 md:top-3 md:left-3 bg-[#DA3A36] text-white text-[8px] md:text-[10px] font-bold uppercase tracking-widest px-2 py-1 md:px-3 md:py-1.5 rounded-full shadow-lg z-10 animate-pulse">{p.label}</span>}
+                  </div>
+                  <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
+                  <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
+                  <div className="flex items-end gap-1 md:gap-3 mb-2 md:mb-8 mt-1 md:mt-0">
+                    <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
+                    {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
+                  </div>
+                  <button onClick={() => setView(`shop-${cat.id}`)} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
+                    <ChevronRight size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">View More</span>
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="px-6 max-w-7xl mx-auto space-y-4">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl md:text-5xl font-serif italic text-[#DA3A36]">Date Night Combos</h2>
-          <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">Perfect Pairings</p>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2 md:gap-10 px-0 md:px-0">
-          {products.filter(p => p.active && p.category === 'Combos').slice(0, 3).map((p, i) => (
-            <div key={p.id} className={`${i > 0 ? 'hidden md:flex' : 'flex'} w-full md:w-[30%] bg-white rounded-[1rem] md:rounded-[2rem] p-2 md:p-6 shadow-sm hover:shadow-2xl transition-all flex-col group h-full border border-[#FED3C7]/30`}>
-              <div className="relative overflow-hidden rounded-lg md:rounded-2xl mb-2 md:mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
-                <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" loading="lazy" decoding="async" />
-              </div>
-              <h3 className="text-[10px] md:text-2xl font-serif text-[#4A0404] cursor-pointer line-clamp-1 md:line-clamp-none" onClick={() => setProduct(p)}>{p.name}</h3>
-              <p className="hidden md:block text-sm opacity-60 italic flex-grow my-4 line-clamp-2 leading-relaxed">{p.description}</p>
-              <div className="flex items-end gap-1 md:gap-3 mb-2 md:mb-8 mt-1 md:mt-0">
-                <div className="text-xs md:text-3xl font-bold text-[#DA3A36] italic leading-none">₹{p.price}</div>
-                {p.regularPrice > p.price && <div className="text-[8px] md:text-sm line-through opacity-20 font-normal mb-0.5">₹{p.regularPrice}</div>}
-              </div>
-              <button onClick={() => setView('combo-shop')} className="w-full bg-[#DA3A36] text-white py-4 md:py-5 rounded-lg md:rounded-2xl font-bold uppercase tracking-widest active:scale-95 transition shadow-lg hover:bg-[#E97D78] flex items-center justify-center gap-2 group-hover:shadow-[#DA3A36]/20 text-xs md:text-sm">
-                <ChevronRight size={14} className="md:w-[18px] md:h-[18px]" /> <span className="inline">View More</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
+          </section>
+        );
+      })}
       <section className="px-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-12 h-px bg-[#DA3A36]/30"></div>
@@ -619,18 +592,20 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct }) {
   );
 }
 
-function ShopView({ products, addToCart, setProduct, filter }) {
+function ShopView({ products, addToCart, setProduct, filter, categoryInfo }) {
   const filtered = products.filter(p => p.active && p.category === filter);
   return (
     <div className="max-w-7xl mx-auto px-6 py-24 min-h-screen space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-500">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl md:text-6xl font-serif italic text-[#DA3A36]">{filter === 'Chocolates' ? 'Chocolate Sanctuary' : (filter === 'Combos' ? 'Date Night Combos' : 'After Dark Collection')}</h1>
+        <h1 className="text-4xl md:text-6xl font-serif italic text-[#DA3A36]">{categoryInfo?.displayName || filter}</h1>
+        {categoryInfo?.subtitle && <p className="text-[10px] uppercase font-bold tracking-[0.3em] opacity-40">{categoryInfo.subtitle}</p>}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filtered.map(p => (
           <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col h-full hover:shadow-2xl transition-all group border border-[#FED3C7]/20">
             <div className="relative overflow-hidden rounded-2xl mb-6 aspect-square shadow-inner cursor-pointer" onClick={() => setProduct(p)}>
               <img src={getImage(p)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+              {p.label && <span className="absolute top-3 left-3 bg-[#DA3A36] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg z-10 animate-pulse">{p.label}</span>}
             </div>
             <h3 className="font-serif text-xl text-[#4A0404] cursor-pointer" onClick={() => setProduct(p)}>{p.name}</h3>
             <p className="text-[10px] opacity-50 italic my-3 line-clamp-3 leading-relaxed">{p.description}</p>
@@ -646,7 +621,7 @@ function ShopView({ products, addToCart, setProduct, filter }) {
   );
 }
 
-function ProductDetailView({ product, addToCart, setView }) {
+function ProductDetailView({ product, addToCart, setView, categories = [] }) {
   const [activeImg, setActiveImg] = useState(0);
   if (!product) return null;
   let images = [product.imageUrl];
@@ -655,13 +630,16 @@ function ProductDetailView({ product, addToCart, setView }) {
     if (Array.isArray(parsed) && parsed.length > 0) images = parsed;
   } catch (e) { }
 
+  const catInfo = categories.find(c => c.id === product.category);
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-20 min-h-[80vh] animate-in fade-in zoom-in duration-500">
-      <button onClick={() => setView(product.category === 'Chocolates' ? 'chocolate-shop' : 'gift-shop')} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 mb-12 transition"><ArrowLeft size={16} /> Back to Catalog</button>
+      <button onClick={() => setView(`shop-${product.category}`)} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 mb-12 transition"><ArrowLeft size={16} /> Back to {catInfo?.displayName || 'Catalog'}</button>
       <div className="grid md:grid-cols-2 gap-16 items-start">
         <div className="space-y-6">
           <div className="rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white aspect-square relative group bg-white">
             <img src={images[activeImg]} className="w-full h-full object-cover transition duration-500" alt={product.name} />
+            {product.label && <span className="absolute top-4 left-4 bg-[#DA3A36] text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full shadow-lg z-10">{product.label}</span>}
           </div>
           {images.length > 1 && (
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
@@ -909,11 +887,11 @@ function CartView({ cart, setView, subtotal, shipCost, grandTotal, delivery, rem
   );
 }
 
-function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, offerNotes }) {
+function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, offerNotes, categories }) {
   const [tab, setTab] = useState('inventory');
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null); // Updated State
-  const [form, setForm] = useState({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: 'Chocolates', active: true });
+  const [form, setForm] = useState({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: 'Chocolates', active: true, label: '' });
   const [orders, setOrders] = useState([]);
 
   // Local states
@@ -923,13 +901,16 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
   const [dForm, setDForm] = useState(delivery);
   const [oForm, setOForm] = useState(offerNotes || { text: '', active: true });
   const [promos, setPromos] = useState([]);
+  const [catForm, setCatForm] = useState(categories || []);
+  const [newCat, setNewCat] = useState({ id: '', name: '', displayName: '', subtitle: '', icon: 'Package' });
 
   useEffect(() => {
     // Load orders
     axios.get('/api/orders').then(res => setOrders(res.data)).catch(console.error);
     if (tab === 'promos') axios.get('/api/promocodes').then(res => setPromos(res.data)).catch(console.error);
     setNForm(flashnews); setMForm(media); setFaqForm(faqs); setDForm(delivery); setOForm(offerNotes);
-  }, [flashnews, media, faqs, delivery, offerNotes, tab]);
+    setCatForm(categories || []);
+  }, [flashnews, media, faqs, delivery, offerNotes, tab, categories]);
 
   const saveConfig = async (key, val) => {
     try {
@@ -989,7 +970,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
     }
     if (imgs.length === 0) imgs = [''];
 
-    setForm({ ...p, images: imgs });
+    setForm({ ...p, images: imgs, label: p.label || '' });
     setAdding(true);
   };
 
@@ -1016,7 +997,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
       }
       setAdding(false);
       setEditingId(null);
-      setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', images: [], category: 'Chocolates', active: true });
+      setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', images: [], category: 'Chocolates', active: true, label: '' });
       reloadData();
     } catch (err) { alert("Failed to save product"); }
   };
@@ -1445,6 +1426,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
         <div className="flex gap-3 border-b border-[#DA3A36]/10 pb-4 overflow-x-auto no-scrollbar scroll-smooth">
           {[
             { id: 'inventory', label: 'Inventory', icon: <Package size={14} /> },
+            { id: 'categories', label: 'Categories', icon: <AlignLeft size={14} /> },
             { id: 'promos', label: 'Promo Codes', icon: <Percent size={14} /> },
             { id: 'orders', label: 'Orders', icon: <ClipboardList size={14} /> },
             { id: 'storefront', label: 'Marquee', icon: <Zap size={14} /> },
@@ -1466,12 +1448,15 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
 
       {tab === 'inventory' && (
         <div className="space-y-10">
-          <button onClick={() => { setAdding(true); setEditingId(null); setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: 'Chocolates', active: true }); }} className="bg-[#DA3A36] text-white px-10 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl border-2 border-[#F6D55F] hover:scale-105 transition"><Plus size={20} /> Publish New Product</button>
+          <button onClick={() => { setAdding(true); setEditingId(null); setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: catForm[0]?.id || 'Chocolates', active: true, label: '' }); }} className="bg-[#DA3A36] text-white px-10 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl border-2 border-[#F6D55F] hover:scale-105 transition"><Plus size={20} /> Publish New Product</button>
           <div className="grid gap-6">
             {products.map(p => (
               <div key={p.id} className="bg-white border border-[#FED3C7] rounded-[2rem] p-6 flex items-center justify-between shadow-sm hover:shadow-md transition">
                 <div className="flex items-center gap-6">
-                  <img src={getImage(p)} className="w-20 h-20 object-cover rounded-2xl shadow-inner border" alt="" />
+                  <div className="relative">
+                    <img src={getImage(p)} className="w-20 h-20 object-cover rounded-2xl shadow-inner border" alt="" />
+                    {p.label && <span className="absolute -top-1 -left-1 bg-[#DA3A36] text-white text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-full shadow">{p.label}</span>}
+                  </div>
                   <div className="space-y-1">
                     <div className="font-serif text-2xl italic text-[#4A0404]">{p.name} <span className="text-[10px] bg-[#DA3A36]/10 text-[#DA3A36] px-3 py-1 rounded-full ml-2">{p.category}</span></div>
                     <div className="text-xs opacity-60">₹{p.price}</div>
@@ -1484,6 +1469,107 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === 'categories' && (
+        <div className="space-y-10">
+          <div className="bg-white p-10 rounded-[3rem] border border-[#DA3A36]/10 shadow-xl space-y-8">
+            <h3 className="font-serif text-2xl text-[#DA3A36] italic">Add New Category</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Category ID (unique, no spaces)</label>
+                <input className="w-full p-4 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" placeholder="e.g. Wellness" value={newCat.id} onChange={e => setNewCat({ ...newCat, id: e.target.value.replace(/\s/g, '') })} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Display Name (shown as nav/title)</label>
+                <input className="w-full p-4 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" placeholder="e.g. Wellness Sanctuary" value={newCat.displayName} onChange={e => setNewCat({ ...newCat, displayName: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Short Name (button label)</label>
+                <input className="w-full p-4 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" placeholder="e.g. Wellness" value={newCat.name} onChange={e => setNewCat({ ...newCat, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Subtitle</label>
+                <input className="w-full p-4 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" placeholder="e.g. Mind & Body Essentials" value={newCat.subtitle} onChange={e => setNewCat({ ...newCat, subtitle: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Icon</label>
+                <select className="w-full p-4 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none" value={newCat.icon} onChange={e => setNewCat({ ...newCat, icon: e.target.value })}>
+                  {['Coffee', 'Package', 'Gift', 'Heart', 'Sparkles', 'Award', 'Zap'].map(ic => (
+                    <option key={ic} value={ic}>{ic}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button onClick={() => {
+              if (!newCat.id || !newCat.displayName || !newCat.name) { alert('Please fill ID, Display Name, and Short Name'); return; }
+              if (catForm.some(c => c.id === newCat.id)) { alert('Category ID already exists'); return; }
+              const updated = [...catForm, { ...newCat }];
+              setCatForm(updated);
+              setNewCat({ id: '', name: '', displayName: '', subtitle: '', icon: 'Package' });
+              saveConfig('categories', { items: updated });
+            }} className="bg-[#DA3A36] text-white px-8 py-4 rounded-2xl font-bold uppercase text-xs shadow-lg hover:scale-105 transition flex items-center gap-2">
+              <Plus size={18} /> Add Category
+            </button>
+          </div>
+
+          <div className="grid gap-4">
+            {catForm.map((cat, idx) => (
+              <div key={cat.id} className="bg-white p-6 rounded-[2rem] border border-[#DA3A36]/10 shadow-sm space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[#DA3A36]/10 flex items-center justify-center text-[#DA3A36]">
+                      {getIcon(cat.icon, 20)}
+                    </div>
+                    <div>
+                      <div className="font-serif text-xl text-[#DA3A36] italic">{cat.displayName}</div>
+                      <div className="text-[10px] opacity-40 uppercase tracking-widest">{cat.id} • {cat.subtitle}</div>
+                    </div>
+                  </div>
+                  <button onClick={() => {
+                    if (confirm(`Delete category "${cat.displayName}"? Products in this category will still exist but won't appear in navigation.`)) {
+                      const updated = catForm.filter((_, i) => i !== idx);
+                      setCatForm(updated);
+                      saveConfig('categories', { items: updated });
+                    }
+                  }} className="bg-red-50 text-red-500 p-3 rounded-full hover:bg-red-500 hover:text-white transition"><Trash2 size={18} /></button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[8px] uppercase font-bold opacity-30 ml-1">Display Name</label>
+                    <input className="w-full p-3 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none text-sm" value={cat.displayName} onChange={e => {
+                      const updated = [...catForm]; updated[idx] = { ...updated[idx], displayName: e.target.value }; setCatForm(updated);
+                    }} />
+                  </div>
+                  <div>
+                    <label className="text-[8px] uppercase font-bold opacity-30 ml-1">Short Name</label>
+                    <input className="w-full p-3 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none text-sm" value={cat.name} onChange={e => {
+                      const updated = [...catForm]; updated[idx] = { ...updated[idx], name: e.target.value }; setCatForm(updated);
+                    }} />
+                  </div>
+                  <div>
+                    <label className="text-[8px] uppercase font-bold opacity-30 ml-1">Subtitle</label>
+                    <input className="w-full p-3 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none text-sm" value={cat.subtitle} onChange={e => {
+                      const updated = [...catForm]; updated[idx] = { ...updated[idx], subtitle: e.target.value }; setCatForm(updated);
+                    }} />
+                  </div>
+                  <div>
+                    <label className="text-[8px] uppercase font-bold opacity-30 ml-1">Icon</label>
+                    <select className="w-full p-3 rounded-xl bg-[#F4E6C5]/20 border border-[#FED3C7] outline-none text-sm" value={cat.icon} onChange={e => {
+                      const updated = [...catForm]; updated[idx] = { ...updated[idx], icon: e.target.value }; setCatForm(updated);
+                    }}>
+                      {['Coffee', 'Package', 'Gift', 'Heart', 'Sparkles', 'Award', 'Zap'].map(ic => (
+                        <option key={ic} value={ic}>{ic}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => saveConfig('categories', { items: catForm })} className="w-full bg-[#DA3A36] text-white py-5 rounded-[1.5rem] font-bold uppercase tracking-widest shadow-xl border-2 border-[#F6D55F]">Save All Category Changes</button>
         </div>
       )}
 
@@ -1778,9 +1864,9 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
                   <div>
                     <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Category</label>
                     <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
-                      <option value="Chocolates">Chocolates</option>
-                      <option value="Combos">Combos</option>
-                      <option value="Gifts">Gifts & Extras</option>
+                      {catForm.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.displayName || cat.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -1790,6 +1876,19 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
                       <option value="false">Inactive</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Product Label (badge on image)</label>
+                  <div className="flex gap-2 flex-wrap mb-2 mt-1">
+                    {['', 'New', 'Hot', 'Best Seller', 'Limited Edition', 'Sale', 'Trending'].map(lbl => (
+                      <button type="button" key={lbl} onClick={() => setForm({ ...form, label: lbl })}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition border ${form.label === lbl ? 'bg-[#DA3A36] text-white border-[#DA3A36]' : 'bg-white/50 text-[#DA3A36]/60 border-[#FED3C7] hover:border-[#DA3A36]/40'}`}>
+                        {lbl || 'None'}
+                      </button>
+                    ))}
+                  </div>
+                  <input className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" placeholder="Or type custom label..." value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

@@ -134,10 +134,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
     try {
-        const { name, price, regularPrice, description, imageUrl, category, active } = req.body;
+        const { name, price, regularPrice, description, imageUrl, category, active, label } = req.body;
         const [result] = await dbQuery(
-            'INSERT INTO products (name, price, regularPrice, description, imageUrl, category, active) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [name, price, regularPrice, description, imageUrl, category, active]
+            'INSERT INTO products (name, price, regularPrice, description, imageUrl, category, active, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [name, price, regularPrice, description, imageUrl, category, active, label || null]
         );
         res.json({ id: result.insertId, ...req.body });
     } catch (err) {
@@ -148,10 +148,10 @@ app.post('/api/products', async (req, res) => {
 
 app.put('/api/products/:id', async (req, res) => {
     try {
-        const { name, price, regularPrice, description, imageUrl, category, active } = req.body;
+        const { name, price, regularPrice, description, imageUrl, category, active, label } = req.body;
         await dbQuery(
-            'UPDATE products SET name=?, price=?, regularPrice=?, description=?, imageUrl=?, category=?, active=? WHERE id=?',
-            [name, price, regularPrice, description, imageUrl, category, active, req.params.id]
+            'UPDATE products SET name=?, price=?, regularPrice=?, description=?, imageUrl=?, category=?, active=?, label=? WHERE id=?',
+            [name, price, regularPrice, description, imageUrl, category, active, label || null, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
@@ -352,6 +352,8 @@ app.post('/api/create-razorpay-order', async (req, res) => {
         // Ensure new columns exist for existing tables
         try { await dbQuery("ALTER TABLE promocodes ADD COLUMN auto_apply BOOLEAN DEFAULT FALSE"); } catch (e) { }
         try { await dbQuery("ALTER TABLE promocodes ADD COLUMN min_order_value DECIMAL(10,2) DEFAULT 0"); } catch (e) { }
+        // Ensure label column exists on products table
+        try { await dbQuery("ALTER TABLE products ADD COLUMN label VARCHAR(50) DEFAULT NULL"); } catch (e) { }
         console.log('[DB] Promocodes table verified');
     } catch (e) { console.error('[DB] Failed to init promocodes table', e); }
 })();
