@@ -119,12 +119,29 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/products', async (req, res) => {
     try {
         const [rows] = await dbQuery('SELECT * FROM products');
-        const products = rows.map(p => ({
-            ...p,
-            price: Number(p.price),
-            regularPrice: Number(p.regularPrice),
-            active: Boolean(p.active)
-        }));
+        const products = rows.map(p => {
+            // Parse categories: support both old single-string and new JSON array format
+            let categories = [];
+            if (p.categories) {
+                try {
+                    const parsed = JSON.parse(p.categories);
+                    categories = Array.isArray(parsed) ? parsed : [parsed];
+                } catch {
+                    categories = p.categories ? [p.categories] : [];
+                }
+            } else if (p.category) {
+                // Backwards compatibility: old single category field
+                categories = [p.category];
+            }
+            return {
+                ...p,
+                price: Number(p.price),
+                regularPrice: Number(p.regularPrice),
+                active: Boolean(p.active),
+                categories,
+                category: categories[0] || '' // Keep legacy field for backwards compat
+            };
+        });
         res.json(products);
     } catch (err) {
         console.error('[API] Error fetching products:', err);
@@ -134,12 +151,15 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
     try {
-        const { name, price, regularPrice, description, imageUrl, category, active, label } = req.body;
+        const { name, price, regularPrice, description, imageUrl, categories, category, active, label } = req.body;
+        // Support both new 'categories' array and old 'category' string
+        const cats = categories || (category ? [category] : []);
+        const catsJson = JSON.stringify(cats);
         const [result] = await dbQuery(
-            'INSERT INTO products (name, price, regularPrice, description, imageUrl, category, active, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [name, price, regularPrice, description, imageUrl, category, active, label || null]
+            'INSERT INTO products (name, price, regularPrice, description, imageUrl, category, categories, active, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [name, price, regularPrice, description, imageUrl, cats[0] || '', catsJson, active, label || null]
         );
-        res.json({ id: result.insertId, ...req.body });
+        res.json({ id: result.insertId, ...req.body, categories: cats });
     } catch (err) {
         console.error('[API] Error creating product:', err);
         res.status(500).json({ error: err.message });
@@ -148,10 +168,13 @@ app.post('/api/products', async (req, res) => {
 
 app.put('/api/products/:id', async (req, res) => {
     try {
-        const { name, price, regularPrice, description, imageUrl, category, active, label } = req.body;
+        const { name, price, regularPrice, description, imageUrl, categories, category, active, label } = req.body;
+        // Support both new 'categories' array and old 'category' string
+        const cats = categories || (category ? [category] : []);
+        const catsJson = JSON.stringify(cats);
         await dbQuery(
-            'UPDATE products SET name=?, price=?, regularPrice=?, description=?, imageUrl=?, category=?, active=?, label=? WHERE id=?',
-            [name, price, regularPrice, description, imageUrl, category, active, label || null, req.params.id]
+            'UPDATE products SET name=?, price=?, regularPrice=?, description=?, imageUrl=?, category=?, categories=?, active=?, label=? WHERE id=?',
+            [name, price, regularPrice, description, imageUrl, cats[0] || '', catsJson, active, label || null, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
@@ -166,6 +189,39 @@ app.delete('/api/products/:id', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('[API] Error deleting product:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Remove category from all products (used when deleting a category)
+app.post('/api/products/remove-category', async (req, res) => {
+    try {
+        const { categoryId } = req.body;
+        if (!categoryId) return res.status(400).json({ error: 'categoryId required' });
+
+        // Get all products that have this category
+        const [rows] = await dbQuery('SELECT id, categories, category FROM products');
+        let updated = 0;
+        for (const p of rows) {
+            let cats = [];
+            try {
+                const parsed = JSON.parse(p.categories);
+                cats = Array.isArray(parsed) ? parsed : [parsed];
+            } catch {
+                cats = p.category ? [p.category] : [];
+            }
+            if (cats.includes(categoryId)) {
+                const newCats = cats.filter(c => c !== categoryId);
+                await dbQuery(
+                    'UPDATE products SET categories=?, category=? WHERE id=?',
+                    [JSON.stringify(newCats), newCats[0] || '', p.id]
+                );
+                updated++;
+            }
+        }
+        res.json({ success: true, updated });
+    } catch (err) {
+        console.error('[API] Error removing category from products:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -354,6 +410,16 @@ app.post('/api/create-razorpay-order', async (req, res) => {
         try { await dbQuery("ALTER TABLE promocodes ADD COLUMN min_order_value DECIMAL(10,2) DEFAULT 0"); } catch (e) { }
         // Ensure label column exists on products table
         try { await dbQuery("ALTER TABLE products ADD COLUMN label VARCHAR(50) DEFAULT NULL"); } catch (e) { }
+        // Add categories column (JSON array) for multi-category support
+        try { await dbQuery("ALTER TABLE products ADD COLUMN categories TEXT DEFAULT NULL"); } catch (e) { }
+        // Migrate existing single category values to categories JSON array
+        try {
+            const [prods] = await dbQuery("SELECT id, category, categories FROM products WHERE categories IS NULL AND category IS NOT NULL AND category != ''");
+            for (const p of prods) {
+                await dbQuery('UPDATE products SET categories=? WHERE id=?', [JSON.stringify([p.category]), p.id]);
+            }
+            if (prods.length > 0) console.log(`[DB] Migrated ${prods.length} products to multi-category format`);
+        } catch (e) { console.error('[DB] Category migration error:', e.message); }
         console.log('[DB] Promocodes table verified');
     } catch (e) { console.error('[DB] Failed to init promocodes table', e); }
 })();

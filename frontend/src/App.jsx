@@ -23,12 +23,12 @@ const THEME = {
 };
 
 const INITIAL_PRODUCTS = [
-  { id: 'p1', name: 'LUVBEES Classic', price: 499.00, regularPrice: 799, description: "India's viral chocolate sensation. Feed the flame, naturally.", imageUrl: 'https://images.unsplash.com/photo-1516589174184-c68526674fd6', active: true, category: 'Chocolates' },
-  { id: 'p2', name: 'Combo Pack of 2', price: 799.00, regularPrice: 1598, description: "Double the delight. Save ₹450 with this pack of two handcrafted bars.", imageUrl: 'https://images.unsplash.com/photo-1522673607200-16484837dec5', active: true, category: 'Chocolates' },
-  { id: 'p3', name: 'Edible Chocobody Paint', price: 599.00, regularPrice: 899, description: "Rich, smooth dark chocolate paint with a soft brush for artistic intimacy.", imageUrl: 'https://images.unsplash.com/photo-1511381939415-e44015466834', active: true, category: 'Chocolates' },
-  { id: 'p4', name: 'Adam & Eve Candle', price: 1199.00, regularPrice: 2397, description: "Scented with sandalwood and rose petals. Designed for intimate evenings.", imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59', active: true, category: 'Gifts' },
-  { id: 'p5', name: 'Couple Flaming Card', price: 299.00, regularPrice: 499, description: "Heat-reactive cards that reveal daring dares and romantic prompts.", imageUrl: 'https://images.unsplash.com/photo-1534531173927-aeb928d54385', active: true, category: 'Gifts' },
-  { id: 'p6', name: 'Massage Oil Set', price: 899.00, regularPrice: 1499, description: "A trio of essential oils: Lavender, Ylang Ylang, and Jasmine for deep relaxation.", imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef', active: true, category: 'Gifts' }
+  { id: 'p1', name: 'LUVBEES Classic', price: 499.00, regularPrice: 799, description: "India's viral chocolate sensation. Feed the flame, naturally.", imageUrl: 'https://images.unsplash.com/photo-1516589174184-c68526674fd6', active: true, categories: ['Chocolates'], category: 'Chocolates' },
+  { id: 'p2', name: 'Combo Pack of 2', price: 799.00, regularPrice: 1598, description: "Double the delight. Save ₹450 with this pack of two handcrafted bars.", imageUrl: 'https://images.unsplash.com/photo-1522673607200-16484837dec5', active: true, categories: ['Chocolates'], category: 'Chocolates' },
+  { id: 'p3', name: 'Edible Chocobody Paint', price: 599.00, regularPrice: 899, description: "Rich, smooth dark chocolate paint with a soft brush for artistic intimacy.", imageUrl: 'https://images.unsplash.com/photo-1511381939415-e44015466834', active: true, categories: ['Chocolates'], category: 'Chocolates' },
+  { id: 'p4', name: 'Adam & Eve Candle', price: 1199.00, regularPrice: 2397, description: "Scented with sandalwood and rose petals. Designed for intimate evenings.", imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59', active: true, categories: ['Gifts'], category: 'Gifts' },
+  { id: 'p5', name: 'Couple Flaming Card', price: 299.00, regularPrice: 499, description: "Heat-reactive cards that reveal daring dares and romantic prompts.", imageUrl: 'https://images.unsplash.com/photo-1534531173927-aeb928d54385', active: true, categories: ['Gifts'], category: 'Gifts' },
+  { id: 'p6', name: 'Massage Oil Set', price: 899.00, regularPrice: 1499, description: "A trio of essential oils: Lavender, Ylang Ylang, and Jasmine for deep relaxation.", imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef', active: true, categories: ['Gifts'], category: 'Gifts' }
 ];
 
 // Helper to load scripts (for Razorpay)
@@ -500,7 +500,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct, categ
       </section>
 
       {categories.map(cat => {
-        const catProducts = products.filter(p => p.active && p.category === cat.id);
+        const catProducts = products.filter(p => p.active && (p.categories || []).includes(cat.id));
         if (catProducts.length === 0) return null;
         return (
           <section key={cat.id} className="px-6 max-w-7xl mx-auto space-y-4">
@@ -593,7 +593,7 @@ function HomeView({ products, setView, addToCart, media, faqs, setProduct, categ
 }
 
 function ShopView({ products, addToCart, setProduct, filter, categoryInfo }) {
-  const filtered = products.filter(p => p.active && p.category === filter);
+  const filtered = products.filter(p => p.active && (p.categories || []).includes(filter));
   return (
     <div className="max-w-7xl mx-auto px-6 py-24 min-h-screen space-y-16 animate-in fade-in slide-in-from-bottom-5 duration-500">
       <div className="text-center space-y-4">
@@ -630,11 +630,12 @@ function ProductDetailView({ product, addToCart, setView, categories = [] }) {
     if (Array.isArray(parsed) && parsed.length > 0) images = parsed;
   } catch (e) { }
 
-  const catInfo = categories.find(c => c.id === product.category);
+  const productCats = product.categories || (product.category ? [product.category] : []);
+  const catInfo = categories.find(c => productCats.includes(c.id));
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-20 min-h-[80vh] animate-in fade-in zoom-in duration-500">
-      <button onClick={() => setView(`shop-${product.category}`)} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 mb-12 transition"><ArrowLeft size={16} /> Back to {catInfo?.displayName || 'Catalog'}</button>
+      <button onClick={() => setView(`shop-${productCats[0] || 'home'}`)} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 mb-12 transition"><ArrowLeft size={16} /> Back to {catInfo?.displayName || 'Catalog'}</button>
       <div className="grid md:grid-cols-2 gap-16 items-start">
         <div className="space-y-6">
           <div className="rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white aspect-square relative group bg-white">
@@ -653,7 +654,7 @@ function ProductDetailView({ product, addToCart, setView, categories = [] }) {
         </div>
         <div className="space-y-10 sticky top-32">
           <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-[0.4em] text-[#DA3A36] opacity-60">{product.category}</span>
+            <div className="flex flex-wrap gap-2">{(product.categories || [product.category]).map(c => <span key={c} className="text-xs font-bold uppercase tracking-[0.2em] text-[#DA3A36] opacity-60 bg-[#DA3A36]/5 px-3 py-1 rounded-full">{c}</span>)}</div>
             <h1 className="text-5xl md:text-7xl font-serif italic leading-tight text-[#4A0404]">{product.name}</h1>
             <div className="flex items-center gap-4 pt-2">
               <span className="text-4xl font-bold text-[#DA3A36] italic">₹{product.price}</span>
@@ -891,7 +892,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
   const [tab, setTab] = useState('inventory');
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null); // Updated State
-  const [form, setForm] = useState({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: 'Chocolates', active: true, label: '' });
+  const [form, setForm] = useState({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', categories: ['Chocolates'], active: true, label: '' });
   const [orders, setOrders] = useState([]);
 
   // Local states
@@ -970,7 +971,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
     }
     if (imgs.length === 0) imgs = [''];
 
-    setForm({ ...p, images: imgs, label: p.label || '' });
+    setForm({ ...p, images: imgs, label: p.label || '', categories: p.categories || (p.category ? [p.category] : []) });
     setAdding(true);
   };
 
@@ -985,10 +986,13 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
         ...form,
         price: parseFloat(form.price),
         regularPrice: parseFloat(form.regularPrice),
-        imageUrl: finalImages.length > 0 ? JSON.stringify(finalImages) : ''
+        imageUrl: finalImages.length > 0 ? JSON.stringify(finalImages) : '',
+        categories: form.categories || []
       };
       // Remove temporary images array from payload
       if ('images' in payload) delete payload.images;
+      // Remove legacy category field, backend will derive it from categories
+      if ('category' in payload) delete payload.category;
 
       if (editingId) {
         await axios.put(`/api/products/${editingId}`, payload);
@@ -997,7 +1001,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
       }
       setAdding(false);
       setEditingId(null);
-      setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', images: [], category: 'Chocolates', active: true, label: '' });
+      setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', images: [], categories: ['Chocolates'], active: true, label: '' });
       reloadData();
     } catch (err) { alert("Failed to save product"); }
   };
@@ -1448,7 +1452,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
 
       {tab === 'inventory' && (
         <div className="space-y-10">
-          <button onClick={() => { setAdding(true); setEditingId(null); setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', category: catForm[0]?.id || 'Chocolates', active: true, label: '' }); }} className="bg-[#DA3A36] text-white px-10 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl border-2 border-[#F6D55F] hover:scale-105 transition"><Plus size={20} /> Publish New Product</button>
+          <button onClick={() => { setAdding(true); setEditingId(null); setForm({ name: '', price: 0, regularPrice: 0, description: '', imageUrl: '', categories: [catForm[0]?.id || 'Chocolates'], active: true, label: '' }); }} className="bg-[#DA3A36] text-white px-10 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl border-2 border-[#F6D55F] hover:scale-105 transition"><Plus size={20} /> Publish New Product</button>
           <div className="grid gap-6">
             {products.map(p => (
               <div key={p.id} className="bg-white border border-[#FED3C7] rounded-[2rem] p-6 flex items-center justify-between shadow-sm hover:shadow-md transition">
@@ -1458,7 +1462,7 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
                     {p.label && <span className="absolute -top-1 -left-1 bg-[#DA3A36] text-white text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-full shadow">{p.label}</span>}
                   </div>
                   <div className="space-y-1">
-                    <div className="font-serif text-2xl italic text-[#4A0404]">{p.name} <span className="text-[10px] bg-[#DA3A36]/10 text-[#DA3A36] px-3 py-1 rounded-full ml-2">{p.category}</span></div>
+                    <div className="font-serif text-2xl italic text-[#4A0404]">{p.name} {(p.categories || [p.category]).map(c => <span key={c} className="text-[10px] bg-[#DA3A36]/10 text-[#DA3A36] px-3 py-1 rounded-full ml-1">{c}</span>)}</div>
                     <div className="text-xs opacity-60">₹{p.price}</div>
                   </div>
                 </div>
@@ -1527,11 +1531,16 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
                       <div className="text-[10px] opacity-40 uppercase tracking-widest">{cat.id} • {cat.subtitle}</div>
                     </div>
                   </div>
-                  <button onClick={() => {
-                    if (confirm(`Delete category "${cat.displayName}"? Products in this category will still exist but won't appear in navigation.`)) {
+                  <button onClick={async () => {
+                    if (confirm(`Delete category "${cat.displayName}"?\n\nProducts will NOT be deleted — only the category tag will be removed from them.`)) {
+                      // Remove this category from all products via API
+                      try {
+                        await axios.post('/api/products/remove-category', { categoryId: cat.id });
+                      } catch (e) { console.error('Failed to remove category from products:', e); }
                       const updated = catForm.filter((_, i) => i !== idx);
                       setCatForm(updated);
                       saveConfig('categories', { items: updated });
+                      reloadData();
                     }
                   }} className="bg-red-50 text-red-500 p-3 rounded-full hover:bg-red-500 hover:text-white transition"><Trash2 size={18} /></button>
                 </div>
@@ -1862,12 +1871,30 @@ function AdminPanel({ products, flashnews, media, faqs, delivery, reloadData, of
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Category</label>
-                    <select className="w-full p-4 rounded-xl bg-white/50 border border-[#FED3C7] focus:bg-white transition outline-none" onChange={e => setForm({ ...form, category: e.target.value })} value={form.category}>
-                      {catForm.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.displayName || cat.name}</option>
-                      ))}
-                    </select>
+                    <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Categories (select multiple)</label>
+                    <div className="flex flex-wrap gap-2 mt-2 p-3 bg-white/50 rounded-xl border border-[#FED3C7]">
+                      {catForm.map(cat => {
+                        const isSelected = (form.categories || []).includes(cat.id);
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              const current = form.categories || [];
+                              if (isSelected) {
+                                setForm({ ...form, categories: current.filter(c => c !== cat.id) });
+                              } else {
+                                setForm({ ...form, categories: [...current, cat.id] });
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition border ${isSelected ? 'bg-[#DA3A36] text-white border-[#DA3A36] shadow-md' : 'bg-white/50 text-[#DA3A36]/60 border-[#FED3C7] hover:border-[#DA3A36]/40'}`}
+                          >
+                            {isSelected ? '✓ ' : ''}{cat.displayName || cat.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {(!form.categories || form.categories.length === 0) && <p className="text-[9px] text-red-400 mt-1 ml-2">Select at least one category</p>}
                   </div>
                   <div>
                     <label className="text-[10px] uppercase font-bold opacity-40 ml-2">Status</label>
